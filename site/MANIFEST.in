@@ -1,0 +1,3 @@
+include wegive/config/deployment.ini_tmpl
+recursive-include wegive/public *
+recursive-include wegive/templates *
