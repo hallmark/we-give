@@ -1,0 +1,19 @@
+## -*- coding: utf-8 -*-
+
+<fb:title>Welcome</fb:title>
+
+<h3>Welcome to the app</h3>
+
+This is just a test.<br />
+
+This is being rendered in version: <fb:fbmlversion />
+
+<fb:if-is-app-user>
+  <p>You have added this app!.</p>
+  <fb:else><p>You have not added this app yet.  <a href="${c.facebook.get_login_url()}">Add it now</a></p>
+  <p>I can still get your friends!:</p>
+  % for friend in c.friends:
+    <fb:profile-pic uid="${friend['uid']}" />
+  % endfor
+  </fb:else>
+</fb:if-is-app-user>

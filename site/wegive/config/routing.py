@@ -12,6 +12,9 @@ def make_map():
     map = Mapper(directory=config['pylons.paths']['controllers'],
                  always_scan=config['debug'])
     map.minimization = False
+    map.sub_domains = True
+    
+    fbsubdomain = config['app_conf']['pyfacebook.subdomain']
     
     # The ErrorController route (handles 404/500 error pages); it should
     # likely stay at the top, ensuring it can always be resolved
@@ -19,6 +22,9 @@ def make_map():
     map.connect('/error/{action}/{id}', controller='error')
 
     # CUSTOM ROUTES HERE
+    map.connect('/app/{action}', controller='facebookapp', conditions={'sub_domain':[fbsubdomain]})
+    map.connect('/', controller='facebookcanvas', action='index', conditions={'sub_domain':[fbsubdomain]})
+    map.connect('/', controller='hello', action='index')
 
     map.connect('/{controller}/{action}')
     map.connect('/{controller}/{action}/{id}')

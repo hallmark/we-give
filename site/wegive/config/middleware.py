@@ -8,6 +8,7 @@ from pylons import config
 from pylons.middleware import ErrorHandler, StatusCodeRedirect
 from pylons.wsgiapp import PylonsApp
 from routes.middleware import RoutesMiddleware
+import facebook
 
 from wegive.config.environment import load_environment
 
@@ -37,6 +38,8 @@ def make_app(global_conf, full_stack=True, **app_conf):
     app = PylonsApp()
     
     # CUSTOM MIDDLEWARE HERE (filtered by error handling middlewares)
+    from facebook.wsgi import create_pylons_facebook_middleware
+    app = create_pylons_facebook_middleware(app, app_conf)
     
     # Routing/Session/Cache Middleware
     app = RoutesMiddleware(app, config['routes.map'])
