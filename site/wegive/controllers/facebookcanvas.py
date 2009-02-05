@@ -34,6 +34,7 @@ class FacebookcanvasController(BaseController):
         
         c.foo = 'test string'
         
+        """
         if facebook.uid:
             log.debug('uid: %s' % facebook.uid)
         
@@ -56,12 +57,22 @@ class FacebookcanvasController(BaseController):
         if facebook.uid:
             log.debug('uid: %s' % facebook.uid)
             current_user = facebook.uid
+        """
+        
+        current_user = None
+        facebook.process_request()
+        if facebook.user:
+            log.debug('user: %s' % facebook.user)
+            current_user = facebook.user
+        elif facebook.canvas_user:
+            log.debug('canvas_user: %s' % facebook.canvas_user)
+            current_user = facebook.canvas_user
         
         if current_user:
-            info = facebook.users.getInfo([current_user], ['name', 'pic_square', 'locale'])[0]
+            info = facebook.api_client.users.getInfo([current_user], ['name', 'pic_square', 'locale'])[0]
             log.debug('name: %s, pic: %s, locale: %s' % (info['name'], info['pic_square'], info['locale']) )
-            friends = facebook.friends.get(uid=current_user)
-            friends = facebook.users.getInfo(friends, ['uid', 'name', 'pic_square', 'locale'])
+            friends = facebook.api_client.friends.get(uid=current_user)
+            friends = facebook.api_client.users.getInfo(friends, ['uid', 'name', 'pic_square', 'locale'])
             c.friends = friends
         
         

@@ -83,7 +83,7 @@ class FacebookWSGIMiddleware(object):
 try:
     import pylons
     from pylons.controllers.util import redirect_to as pylons_redirect_to
-    from routes import url_to
+    from routes import url_for
 except ImportError:
     pass
 else:
@@ -103,6 +103,16 @@ else:
         # request object that check_session and validate_signature
         # should *just work*.
 
+        def process_request(self, request=None):
+            if request is None:
+                request = pylons.request
+            return Facebook.process_request(self, request)
+
+        def validate_fb_params(self, resolve_auth_token=True, request=None):
+            if request is None:
+                request = pylons.request
+            return Facebook.validate_fb_params(self, resolve_auth_token=resolve_auth_token, request=request)
+
         def redirect_to(self, url):
             """Wrap Pylons' redirect_to function so that it works in_canvas.
 
@@ -116,7 +126,7 @@ else:
 
         def apps_url_for(self, *args, **kargs):
             """Like url_for, but starts with "http://apps.facebook.com"."""
-            return "http://apps.facebook.com" + url_to(*args, **kargs)
+            return "http://apps.facebook.com" + url_for(*args, **kargs)
 
 
     def create_pylons_facebook_middleware(app, config):

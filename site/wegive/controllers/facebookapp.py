@@ -30,13 +30,17 @@ class FacebookappController(BaseController):
             result += '%s: %r\n'%(key, value)
         log.debug(result)
         
-        if facebook.uid:
-            log.debug('uid: %s' % facebook.uid)
+        facebook.process_request()
+        if facebook.user:
+            log.debug('user: %s' % facebook.user)
+            log.debug('Authorized new user for We Give, user: %s' % facebook.user)
         
+        """
         if facebook.check_session():
             log.debug('check_session is true')
             if facebook.uid:
                 log.debug('Authorized new user for We Give, uid: %s' % facebook.uid)
+        """
 
     def remove(self):
         result = 'Facebook request ==============='
@@ -49,9 +53,12 @@ class FacebookappController(BaseController):
             result += '%s: %r\n'%(key, value)
         log.debug(result)
         
-        if facebook.uid:
-            log.debug('uid: %s' % facebook.uid)
+        facebook.process_request()
+        if facebook.user:
+            log.debug('user: %s' % facebook.user)
+            log.debug('Removing user with uid: %s' % facebook.user)
         
+        """
         if facebook.check_session():
             log.debug('check_session is true')
 
@@ -62,4 +69,4 @@ class FacebookappController(BaseController):
         if fb_params and 'user' in fb_params:
             uid = fb_params['user']
             log.debug('Removing user with uid: %s' % uid)
-    
+        """

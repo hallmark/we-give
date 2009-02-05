@@ -44,7 +44,12 @@ http://undefined.org/python/#simplejson to download it, or do
 apt-get install python-simplejson on a Debian-like system.
 """
 
-import md5
+try:
+    import hashlib
+    md5 = hashlib.md5
+except ImportError:
+    import md5
+    md5 = md5.new
 import sys
 import time
 import struct
@@ -124,6 +129,50 @@ METHODS = {
     'admin': {
         'getAllocation': [
             ('integration_point_name', str, []),
+        ],
+    },
+
+    # auth
+    'auth': {
+        'createToken': [],
+
+        'getSession': [
+            ('auth_token', str, ['optional']),
+            ('generate_session_secret', bool, ['optional']),
+        ]
+    },
+
+    # events methods
+    'events': {
+        'cancel': [
+            ('eid', int, []),
+            ('cancel_message', str, ['optional'])
+        ],
+
+        'create': [
+            ('event_info', list, [])
+        ],
+
+        'edit': [
+            ('eid', int, []),
+            ('event_info', list, [])
+        ],
+
+        'get': [
+            ('uid', int, ['optional']),
+            ('eids', list, ['optional']),
+            ('start_time', int, ['optional']),
+            ('end_time', int, ['optional']),
+            ('rsvp_status', str, ['optional']),
+        ],
+
+        'getMembers': [
+            ('eid', int, []),
+        ],
+
+        'rsvp': [
+            ('eid', int, []),
+            ('rsvp_status', str, [])
         ],
     },
 
@@ -216,6 +265,7 @@ METHODS = {
 
         'get': [
             ('flid', int, ['optional']),
+            ('uid', int, ['optional']),
         ],
 
         'getLists': [],
@@ -309,29 +359,10 @@ METHODS = {
         ],
 
         'setStatus': [
-            ('status', str, []),
-            ('clear', bool, []),
+            ('status', str, ['optional']),
+            ('clear', bool, ['optional']),
             ('status_includes_verb', bool, ['optional']),
             ('uid', int, ['optional']),
-        ],
-    },
-
-    # events methods
-    'events': {
-        'get': [
-            ('uid', int, ['optional']),
-            ('eids', list, ['optional']),
-            ('start_time', int, ['optional']),
-            ('end_time', int, ['optional']),
-            ('rsvp_status', str, ['optional']),
-        ],
-
-        'getMembers': [
-            ('eid', int, []),
-        ],
-
-        'create': [
-            ('event_info', json, []),
         ],
     },
 
@@ -499,6 +530,7 @@ METHODS = {
     },
 }
 
+# TODO: REMOVE  -  BEGIN HERE ============================================
 class Proxy(object):
     """Represents a "namespace" of Facebook API calls."""
 
@@ -567,6 +599,8 @@ def __generate_proxies():
 
 __generate_proxies()
 
+# TODO: REMOVE  -  END HERE ============================================
+
 
 class FacebookError(Exception):
     """Exception class for errors received from Facebook."""
@@ -580,6 +614,7 @@ class FacebookError(Exception):
         return 'Error %s: %s' % (self.code, self.msg)
 
 
+# TODO: REMOVE  -  BEGIN HERE ============================================
 class AuthProxy(Proxy):
     """Special proxy for facebook.auth."""
 
@@ -719,134 +754,80 @@ class PhotosProxy(PhotosProxy):
         """Returns a guess at the MIME type of the file from the filename."""
         return str(mimetypes.guess_type(filename)[0]) or 'application/octet-stream'
 
+# TODO: REMOVE  -  END HERE ============================================
 
-class Facebook(object):
+
+class FacebookRestClient(object):
     """
-    Provides access to the Facebook API.
-
-    Instance Variables:
-
-    added
-        True if the user has added this application.
-
-    api_key
-        Your API key, as set in the constructor.
-
-    app_name
-        Your application's name, i.e. the APP_NAME in http://apps.facebook.com/APP_NAME/ if
-        this is for an internal web application. Optional, but useful for automatic redirects
-        to canvas pages.
-
-    auth_token
-        The auth token that Facebook gives you, either with facebook.auth.createToken,
-        or through a GET parameter.
-
-    callback_path
-        The path of the callback set in the Facebook app settings. If your callback is set
-        to http://www.example.com/facebook/callback/, this should be '/facebook/callback/'.
-        Optional, but useful for automatic redirects back to the same page after login.
-
-    desktop
-        True if this is a desktop app, False otherwise. Used for determining how to
-        authenticate.
-
-    facebook_url
-        The url to use for Facebook requests.
-
-    facebook_secure_url
-        The url to use for secure Facebook requests.
-
-    in_canvas
-        True if the current request is for a canvas page.
-
-    internal
-        True if this Facebook object is for an internal application (one that can be added on Facebook)
-
-    page_id
-        Set to the page_id of the current page (if any)
-
-    secret
-        Secret that is used after getSession for desktop apps.
-
-    secret_key
-        Your application's secret key, as set in the constructor.
-
-    session_key
-        The current session key. Set automatically by auth.getSession, but can be set
-        manually for doing infinite sessions.
-
-    session_key_expires
-        The UNIX time of when this session key expires, or 0 if it never expires.
-
-    uid
-        After a session is created, you can get the user's UID with this variable. Set
-        automatically by auth.getSession.
-
-    ----------------------------------------------------------------------
-
     """
-
-    def __init__(self, api_key, secret_key, auth_token=None, app_name=None, callback_path=None, internal=None, proxy=None, facebook_url=None, facebook_secure_url=None):
+    
+    # TODO: from yangman
+    _namespace_classes = dict()
+    
+    
+    BATCH_MODE_DEFAULT = 0
+    BATCH_MODE_SERVER_PARALLEL = 0
+    BATCH_MODE_SERIAL_ONLY = 2
+    
+    def __init__(self, api_key, secret, session_key=None):
         """
-        Initializes a new Facebook object which provides wrappers for the Facebook API.
-
-        If this is a desktop application, the next couple of steps you might want to take are:
-
-        facebook.auth.createToken() # create an auth token
-        facebook.login()            # show a browser window
-        wait_login()                # somehow wait for the user to log in
-        facebook.auth.getSession()  # get a session key
-
-        For web apps, if you are passed an auth_token from Facebook, pass that in as a named parameter.
-        Then call:
-
-        facebook.auth.getSession()
-
         """
+        self.secret = secret
+        self.session_key = session_key
         self.api_key = api_key
-        self.secret_key = secret_key
-        self.session_key = None
-        self.session_key_expires = None
-        self.auth_token = auth_token
-        self.secret = None
-        self.uid = None
-        self.page_id = None
-        self.in_canvas = False
+        # to save making the friends.get api call, this will get prepopulated on
+        # canvas pages
+        self.friends_list = None
+        self.user = None
+        # to save making the pages.isAppAdded api call, this will get prepopulated
+        # on canvas pages
         self.added = False
-        self.app_name = app_name
-        self.callback_path = callback_path
-        self.internal = internal
-        self._friends = None
-        self.proxy = proxy
-        if facebook_url is None:
-            self.facebook_url = FACEBOOK_URL
-        else:
-            self.facebook_url = facebook_url
-        if facebook_secure_url is None:
-            self.facebook_secure_url = FACEBOOK_SECURE_URL
-        else:
-            self.facebook_secure_url = facebook_secure_url
-
+        self.is_user = False
+        # we don't pass friends list to iframes, but we want to make
+        # friends_get really simple in the canvas_user (non-logged in) case.
+        # So we use the canvas_user as default arg to friends_get
+        self.canvas_user = None
+        self.batch_mode = FacebookRestClient.BATCH_MODE_DEFAULT
+        self.batch_queue = None
+        self.last_call_id = 0
+        self.call_as_apikey = ''
+        self.use_curl_if_available = True
+        self.facebook_url = Facebook.get_facebook_url('api') + '/restserver.php'
+        self.facebook_secure_url = Facebook.get_facebook_url('api', secure=True) + '/restserver.php'
+        
+        self.proxy = None
+        
+        # Initialize namespaces
+        self._namespaces = dict()
         for namespace in METHODS:
-            self.__dict__[namespace] = eval('%sProxy(self, \'%s\')' % (namespace.title(), 'facebook.%s' % namespace))
+            self._namespaces[namespace] = self._namespace_classes[namespace](self, namespace)
+    
+    
+    def begin_batch(self):
+        if self.batch_queue is not None:
+            # TODO: throw proper FacebookRestClientException
+            code = 'foo'
+        self.batch_queue = []
+    
+    def end_batch(self):
+        if self.batch_queue is None:
+            # TODO: throw proper FacebookRestClientException
+            pass
+        self._execute_server_side_batch()
+        self.batch_queue = None
+    
+    def _execute_server_side_batch(self):
+        # TODO: implement this
+        pass
+    
+    def begin_permissions_mode(self, permissions_apikey):
+        self.call_as_apikey = permissions_apikey
+    
+    def end_permissions_mode(self):
+        self.call_as_apikey = ''
 
-        self.auth = AuthProxy(self, 'facebook.auth')
-
-
-    def _hash_args(self, args, secret=None):
-        """Hashes arguments by joining key=value pairs, appending a secret, and then taking the MD5 hex digest."""
-        # @author: houyr
-        # fix for UnicodeEncodeError
-        hasher = md5.new(''.join(['%s=%s' % (isinstance(x, unicode) and x.encode("utf-8") or x, isinstance(args[x], unicode) and args[x].encode("utf-8") or args[x]) for x in sorted(args.keys())]))
-        if secret:
-            hasher.update(secret)
-        elif self.secret:
-            hasher.update(self.secret)
-        else:
-            hasher.update(self.secret_key)
-        return hasher.hexdigest()
-
-
+    #
+    # MOVE TO FacebookRestClient - BEGIN =============================
     def _parse_response_item(self, node):
         """Parses an XML response node from Facebook."""
         if node.nodeType == node.DOCUMENT_NODE and \
@@ -907,7 +888,7 @@ class Facebook(object):
         args['api_key'] = self.api_key
         args['v'] = '1.0'
         args['format'] = RESPONSE_FORMAT
-        args['sig'] = self._hash_args(args)
+        args['sig'] = Facebook.generate_sig(args, self.secret)
 
         return args
 
@@ -1001,7 +982,615 @@ class Facebook(object):
 
         return self._parse_response(response, method)
 
+    # MOVE TO FacebookRestClient - END =============================
     
+
+    class Namespace(object):
+        def __init__(self, client, name):
+            self._client = client
+            self._name = name
+
+        def _parse_params(self, defn, arguments, keywords):
+            '''
+            Construct API parameters using given definition and arguments
+
+            This only generates call-specific parameters. Session and authentication
+            parameters will not be added automatically.
+            '''
+            params = dict()
+            i = 0
+
+            # reject too many arguments
+            if len(arguments) > len(defn):
+                raise TypeError('Too many arguments: expecting %d or less, got %d' % (len(defn), len(arguments)))
+
+            # Parse out non-keyworded arguments
+            for arg in arguments:
+                p = defn[i]
+                name = p[0]
+                type = p[1]
+
+                if type == bool:
+                    params[name] =  'true' if arg else 'false'
+                elif type == list:
+                    params[name] = ','.join(str(x) for x in arg)
+                else:
+                    params[name] = str(arg)
+                i += 1
+
+            # Handle named parameters
+            # Note that invalid ones are ignored
+            present_params = [x for x in defn if x[0] in keywords]
+            for p in present_params:
+                value = keywords[p[0]]
+                name = p[0]
+                type = p[1]
+                if type == bool:
+                    params[name] =  'true' if value else 'false'
+                elif type == list:
+                    params[name] = ','.join(str(x) for x in value)
+                else:
+                    params[name] = str(value)
+
+            # Check that all mandatory arguments are present
+            for param_name in (x[0] for x in defn if 'optional' not in x[2]):
+                if param_name not in params:
+                    raise TypeError('Not enough mandatory arguments: expecting %d, got %d' % (
+                                        len([0 for x in defn if 'optional' not in x[2]]), i))
+
+            return params
+
+        def _generic_call(self, name, defn, *arguments, **keywords):
+            params = self._parse_params(defn, arguments, keywords)
+
+            if 'session_key' in keywords:
+                params['session_key'] = keywords['session_key']
+            elif self._client.session_key:
+                params['session_key'] = self._client.session_key
+
+            # Send call_id for all non-auth calls
+            if self._name != 'auth':
+                params['call_id'] = str(int(time.time() * 1000))
+
+            return self._client('%s.%s' % (self._name, name), params)
+
+        def __getattr__(self, name):
+            try:
+                defn = self._call_definitions[name]
+            except KeyError:
+                raise AttributeError("%s instance has no attribute '%s'" % (self.__class__.__name__, name))
+
+            def f(*fargs, **fkeywords):
+                return self._generic_call(name, self._call_definitions[name], *fargs, **fkeywords)
+            return f
+
+    class Namespace_auth(Namespace):
+        def createToken(self, *args, **keywords):
+            token = self._generic_call('createToken', self._call_definitions['createToken'], *args, **keywords)
+            self._client.auth_token = token
+            return token
+
+        # auth.getSession()
+        def getSession(self, *args, **keywords):
+            if len(args) < 1 or 'auth_token' not in keywords:
+                try:
+                    keywords['auth_token'] = self._client.auth_token
+                except AttributeError:
+                    raise RuntimeError('Client does not have auth_token set.')
+            result = self._generic_call('getSession', self._call_definitions['getSession'], *args, **keywords)
+            self._client.session_key = result['session_key']
+            self._client.uid = result['uid']
+            self._client.secret = result.get('secret')
+            self._client.session_key_expires = result['expires']
+            return result
+
+    class Namespace_friends(Namespace):
+        def get(self, *args, **kwargs):
+            if self._client.friends_list:
+                return self._client.friends_list
+            if len(args) < 2 and ('uid' not in kwargs) and self._client.canvas_user:
+                kwargs['uid'] = self._client.canvas_user
+            return self._generic_call('get', self._call_definitions['get'], *args, **kwargs)
+
+    class Namespace_photos(Namespace):
+        """Special proxy for facebook.photos."""
+
+        def upload(self, image, aid=None, caption=None, uid=None, size=(604, 1024)):
+            """Facebook API call. See http://developers.facebook.com/documentation.php?v=1.0&method=photos.upload
+
+            size -- an optional size (width, height) to resize the image to before uploading. Resizes by default
+                    to Facebook's maximum display width of 604.
+            """
+            args = {}
+
+            if aid is not None:
+                args['aid'] = aid
+
+            if caption is not None:
+                args['caption'] = caption
+            if uid is not None:
+                args['uid'] = uid
+
+            args = self._client._build_post_args('facebook.photos.upload', self._client._add_session_args(args))
+
+            try:
+                import cStringIO as StringIO
+            except ImportError:
+                import StringIO
+
+            try:
+                import Image
+            except ImportError:
+                data = StringIO.StringIO(open(image, 'rb').read())
+            else:
+                img = Image.open(image)
+                if size:
+                    img.thumbnail(size, Image.ANTIALIAS)
+                data = StringIO.StringIO()
+                img.save(data, img.format)
+
+            content_type, body = self._encode_multipart_formdata(list(args.iteritems()), [(image, data)])
+            urlinfo = urlparse.urlsplit(self._client.facebook_url)
+            h = httplib.HTTP(urlinfo[1])
+            h.putrequest('POST', urlinfo[2])
+            h.putheader('Content-Type', content_type)
+            h.putheader('Content-Length', str(len(body)))
+            h.putheader('MIME-Version', '1.0')
+            h.putheader('User-Agent', 'PyFacebook Client Library')
+            h.endheaders()
+            h.send(body)
+
+            reply = h.getreply()
+
+            if reply[0] != 200:
+                raise Exception('Error uploading photo: Facebook returned HTTP %s (%s)' % (reply[0], reply[1]))
+
+            response = h.file.read()
+
+            return self._client._parse_response(response, 'facebook.photos.upload')
+
+
+        def _encode_multipart_formdata(self, fields, files):
+            """Encodes a multipart/form-data message to upload an image."""
+            boundary = '-------tHISiStheMulTIFoRMbOUNDaRY'
+            crlf = '\r\n'
+            l = []
+
+            for (key, value) in fields:
+                l.append('--' + boundary)
+                l.append('Content-Disposition: form-data; name="%s"' % str(key))
+                l.append('')
+                l.append(str(value))
+            for (filename, value) in files:
+                l.append('--' + boundary)
+                l.append('Content-Disposition: form-data; filename="%s"' % (str(filename), ))
+                l.append('Content-Type: %s' % self._get_content_type(filename))
+                l.append('')
+                l.append(value.getvalue())
+            l.append('--' + boundary + '--')
+            l.append('')
+            body = crlf.join(l)
+            content_type = 'multipart/form-data; boundary=%s' % boundary
+            return content_type, body
+
+
+        def _get_content_type(self, filename):
+            """Returns a guess at the MIME type of the file from the filename."""
+            return str(mimetypes.guess_type(filename)[0]) or 'application/octet-stream'
+
+
+    def __getattr__(self, name):
+        try:
+            return self._namespaces[name]
+        except KeyError:
+            raise AttributeError("%s instance has no attribute '%s'" % (self.__class__.__name__, name))
+
+    # This defines custom namespace implementations that contains calls which
+    # require more logic than "call Facebook API with these parameters"
+    # Dictionary of name:class pairs
+    # Subclasses can override this to insert their own custom namespace implementations
+    CUSTOM_NAMESPACES = {
+        'auth': Namespace_auth,
+        'friends': Namespace_friends,
+        'photos': Namespace_photos,
+    }
+
+    @classmethod
+    def add_namespace(cls, name, definition, namespace_class=Namespace):
+        cls._namespace_classes[name] = type('NS_%s' % (name,), (namespace_class,),
+                    {'_call_definitions': definition})
+
+    @classmethod
+    def _init_api_calls(cls, api_defn):
+        '''
+        One-time initialization of Facebook API calls according to definition
+        '''
+        for namespace in api_defn:
+            if namespace not in cls.CUSTOM_NAMESPACES:
+                cls.add_namespace(namespace, api_defn[namespace])
+
+        # Special namespaces
+        for name, c in cls.CUSTOM_NAMESPACES.iteritems():
+            cls.add_namespace(name, api_defn[name], c)
+
+
+
+class Facebook(object):
+    """
+    Provides access to the Facebook API.
+
+    Instance Variables:
+
+    added
+        True if the user has added this application.
+
+    api_key
+        Your API key, as set in the constructor.
+
+    app_name
+        Your application's name, i.e. the APP_NAME in http://apps.facebook.com/APP_NAME/ if
+        this is for an internal web application. Optional, but useful for automatic redirects
+        to canvas pages.
+
+    auth_token
+        The auth token that Facebook gives you, either with facebook.auth.createToken,
+        or through a GET parameter.
+
+    callback_path
+        The path of the callback set in the Facebook app settings. If your callback is set
+        to http://www.example.com/facebook/callback/, this should be '/facebook/callback/'.
+        Optional, but useful for automatic redirects back to the same page after login.
+
+    desktop
+        True if this is a desktop app, False otherwise. Used for determining how to
+        authenticate.
+
+    facebook_url
+        The url to use for Facebook requests.
+
+    facebook_secure_url
+        The url to use for secure Facebook requests.
+
+    in_canvas
+        True if the current request is for a canvas page.
+
+    internal
+        True if this Facebook object is for an internal application (one that can be added on Facebook)
+
+    page_id
+        Set to the page_id of the current page (if any)
+
+    secret
+        Secret that is used after getSession for desktop apps.
+
+    secret_key
+        Your application's secret key, as set in the constructor.
+
+    session_key
+        The current session key. Set automatically by auth.getSession, but can be set
+        manually for doing infinite sessions.
+
+    session_key_expires
+        The UNIX time of when this session key expires, or 0 if it never expires.
+
+    uid
+        After a session is created, you can get the user's UID with this variable. Set
+        automatically by auth.getSession.
+
+    ----------------------------------------------------------------------
+
+    """
+
+
+    def __init__(self, api_key, secret_key, auth_token=None, app_name=None, callback_path=None, internal=None, proxy=None, facebook_url=None, facebook_secure_url=None, generate_session_secret=False, request=None):
+        """
+        Initializes a new Facebook object which provides wrappers for the Facebook API.
+
+        If this is a desktop application, the next couple of steps you might want to take are:
+
+        facebook.auth.createToken() # create an auth token
+        facebook.login()            # show a browser window
+        wait_login()                # somehow wait for the user to log in
+        facebook.auth.getSession()  # get a session key
+
+        For web apps, if you are passed an auth_token from Facebook, pass that in as a named parameter.
+        Then call:
+
+        facebook.auth.getSession()
+
+        """
+        # BEGIN PORTING ====================
+        self.session_expires = None
+        self.fb_params = None
+        self.user = None
+        self.profile_user = None
+        self.canvas_user = None
+        self.base_domain = None
+        
+        self.api_key = api_key
+        self.secret = secret_key
+        self.generate_session_secret = generate_session_secret
+        self.api_client = FacebookRestClient(api_key, secret_key)
+        if request:
+            self.process_request(request)
+        # END PORTING ====================
+        
+        
+        
+        self.secret_key = secret_key
+        self.session_key = None
+        self.session_key_expires = None
+        self.auth_token = auth_token
+        #self.secret = None
+        self.uid = None
+        self.page_id = None
+        self.in_canvas = False
+        #self.canvas_user = None
+        self.added = False
+        self.app_name = app_name
+        self.callback_path = callback_path
+        self.internal = internal
+        self._friends = None
+        self.proxy = proxy
+        if facebook_url is None:
+            self.facebook_url = FACEBOOK_URL
+        else:
+            self.facebook_url = facebook_url
+        if facebook_secure_url is None:
+            self.facebook_secure_url = FACEBOOK_SECURE_URL
+        else:
+            self.facebook_secure_url = facebook_secure_url
+
+        # Initialize namespaces
+        #for namespace in METHODS:
+        #    self.__dict__[namespace] = eval('%sProxy(self, \'%s\')' % (namespace.title(), 'facebook.%s' % namespace))
+        #    self._namespaces[namespace] = self._namespace_classes[namespace](self, namespace)
+
+        #self.auth = AuthProxy(self, 'facebook.auth')
+
+
+    def process_request(self, request):
+        self.validate_fb_params(request)
+        
+        default_user = None
+        if self.user:
+            default_user = self.user
+        elif self.profile_user:
+            default_user = self.profile_user
+        elif self.canvas_user:
+            default_user = self.canvas_user
+        
+        self.api_client.user = default_user
+        
+        if self.fb_params.get('friends'):
+            self.api_client.friends_list = self.fb_params['friends'].split(',')
+        if self.fb_params.get('added') == '1':
+            self.api_client.added = True
+        if self.fb_params.get('canvas_user'):
+            self.api_client.canvas_user = self.fb_params['canvas_user']
+
+
+    def validate_fb_params(self, resolve_auth_token=True, request=None):
+        self.fb_params = self.get_valid_fb_params(request.POST, 48*3600, 'fb_sig')
+        
+        if not self.fb_params:
+            fb_params = self.get_valid_fb_params(request.GET, 48*3600, 'fb_sig')
+            fb_post_params = self.get_valid_fb_params(request.POST, 48*3600, 'fb_post_sig')
+            fb_params.update(fb_post_params)
+            self.fb_params = fb_params.copy()
+        
+        if self.fb_params:
+            # Okay, something came in via POST or GET
+            user = self.fb_params.get('user')
+            self.profile_user = self.fb_params.get('profile_user')
+            self.canvas_user = self.fb_params.get('canvas_user')
+            self.base_domain = self.fb_params.get('base_domain')
+            
+            if self.fb_params.get('session_key'):
+                session_key = self.fb_params['session_key']
+            elif self.fb_params.get('profile_session_key'):
+                session_key = self.fb_params['profile_session_key']
+            else:
+                session_key = None
+            
+            expires = self.fb_params.get('expires')
+            self.set_user(user, session_key, expires)
+        else:
+            # if no Facebook parameters were found in the GET or POST variables,
+            # then fall back to cookies, which may have cached user information.
+            # Cookies are also used to receive session data via the JavaScript API
+            req_cookies = None
+            if hasattr(request, 'COOKIES'):
+                req_cookies = request.COOKIES
+            elif hasattr(request, 'cookies'):
+                # we might be on Google AppEngine - check their cookies
+                req_cookies = request.cookies
+            cookies = None
+            if req_cookies:
+                cookies = self.get_valid_fb_params(req_cookies, None, self.api_key)
+            
+            if cookies:
+                # we found valid cookies
+                base_domain_cookie = 'base_domain_' + self.api_key
+                if req_cookies.get(base_domain_cookie):
+                    self.base_domain = req_cookies[base_domain_cookie]
+                
+                # use api_key + '_' as a prefix for the cookies in case there are
+                # multiple facebook clients on the same domain.
+                expires = cookies.get('expires')
+                self.set_user(cookies.get('user'), cookies.get('session_key'), expires)
+                
+            elif resolve_auth_token and 'auth_token' in request.GET:
+                # finally, if we received no parameters, but the 'auth_token' GET var
+                # is present, then we are in the middle of auth handshake,
+                # so go ahead and create the session
+                session = self.do_get_session(request.GET.get('auth_token'))
+                if session:
+                    session_secret = None
+                    if self.generate_session_secret and session.get('secret'):
+                        session_secret = session['secret']
+                    if session.get('base_domain'):
+                        self.base_domain = session['base_domain']
+                    
+                    self.set_user(session.get('uid'), session.get('session_key'), session.get('expires'), session_secret)
+
+
+    def promote_session(self):
+        try:
+            session_secret = self.api_client.auth.promoteSession()
+            if not self.in_fb_canvas():
+                # TODO
+                pass
+            return session_secret
+        except FacebookError, e:
+            # API_EC_PARAM means we don't have a logged in user, otherwise who
+            # knows what it means, so just throw it.
+            # TODO
+            pass
+
+
+    def do_get_session(self, auth_token):
+        try:
+            return self.api_client.auth.getSession(auth_token, self.generate_session_secret)
+        except FacebookError, e:
+            # API_EC_PARAM means we don't have a logged in user, otherwise who
+            # knows what it means, so just throw it.
+            # TODO
+            pass
+
+
+    def expire_session(self):
+        # TODO
+        pass
+
+
+    def redirect(self, url):
+        # TODO
+        pass
+
+
+    def in_frame(self):
+        return self.fb_params.get('in_canvas') or self.fb_params('in_iframe') or False
+
+
+    def in_fb_canvas(self):
+        return self.fb_params.get('in_canvas') or False
+
+
+    def get_loggedin_user(self):
+        return self.user
+
+
+    def get_canvas_user(self):
+        return self.canvas_user
+
+
+    def get_profile_user(self):
+        return self.profile_user
+
+
+    @staticmethod
+    def current_url():
+        # TODO
+        pass
+
+
+    # TODO:
+    # require_login
+    # require_frame
+
+    @staticmethod
+    def get_facebook_url(subdomain='www', secure=False):
+        if secure:
+            return 'https://' + subdomain + '.facebook.com'
+        else:
+            return 'http://' + subdomain + '.facebook.com'
+
+    # TODO:
+    # get_add_url
+    # get_login_url
+
+
+    def set_user(self, user, session_key, expires=None, session_secret=None):
+        # TODO: handle cookies
+        #if (not self.in_fb_canvas()) and
+        self.user = user
+        self.api_client.session_key = session_key
+        self.session_expires = expires
+
+
+    # TODO
+    # set_cookies
+
+
+    def get_valid_fb_params(self, params, timeout=None, namespace='fb_sig'):
+        """
+        Get the signed parameters that were sent from Facebook. Validates the set
+        of parameters against the included signature.
+        
+        Since Facebook sends data to your callback URL via unsecured means, the
+        signature is the only way to make sure that the data actually came from
+        Facebook. So if an app receives a request at the callback URL, it should
+        always verify the signature that comes with against your own secret key.
+        Otherwise, it's possible for someone to spoof a request by
+        pretending to be someone else, i.e.:
+             www.your-callback-url.com/?fb_user=10101
+        
+        This is done automatically by verify_fb_params.
+        """
+        prefix = namespace + '_'
+        prefix_len = len(prefix)
+        if not params or not params.get(namespace):
+            return {}
+        
+        # pull out only those parameters that match the prefix
+        # note that the signature itself (params[namespace]) is not in the list
+        fb_params = dict([(key[len(prefix):], value) for key, value in params.items() if key.startswith(prefix)])
+        
+        # validate that the request hasn't expired. this is most likely
+        # for params that come from request.cookies
+        if timeout:
+            if not fb_params.get('time') or time.time() - float(fb_params['time']) > timeout:
+                return {}
+        
+        # validate that the params match the signature
+        signature = params[namespace]
+        if not self.verify_signature(fb_params, signature):
+            return {}
+        
+        return fb_params
+
+
+    def verify_signature(self, fb_params, expected_sig):
+        """
+        Validates that a given set of parameters match their signature.
+        Parameters all match a given input prefix, such as "fb_sig".
+        """
+        return self._hash_args(fb_params, self.secret) == expected_sig
+
+
+    def _hash_args(self, args, secret=None):
+        """Hashes arguments by joining key=value pairs, appending a secret, and then taking the MD5 hex digest."""
+        if not secret:
+            if self.secret:
+                secret = self.secret
+            else:
+                secret = self.secret_key
+        return Facebook.generate_sig(args, secret)
+
+
+    @staticmethod
+    def generate_sig(args, secret):
+        """
+        Generate a signature using the application secret key.
+        """
+        # @author: houyr
+        # fix for UnicodeEncodeError
+        hasher = md5(''.join(['%s=%s' % (isinstance(x, unicode) and x.encode("utf-8") or x, isinstance(args[x], unicode) and args[x].encode("utf-8") or args[x]) for x in sorted(args.keys())]))
+        hasher.update(secret)
+        return hasher.hexdigest()
+
+
     # URL helpers
     def get_url(self, page, **args):
         """
@@ -1155,6 +1744,9 @@ class Facebook(object):
 
         if params.get('in_canvas') == '1':
             self.in_canvas = True
+        
+        if 'canvas_user' in params:
+            self.canvas_user = params['canvas_user']
 
         if params.get('added') == '1':
             self.added = True
@@ -1228,7 +1820,7 @@ class Facebook(object):
 
 
         vals = ''.join(['%s=%s' % (x.replace(self.api_key+"_",""), cookies[x]) for x in sigkeys])
-        hasher = md5.new(vals)
+        hasher = md5(vals)
         
         hasher.update(self.secret_key)
         digest = hasher.hexdigest()
@@ -1238,6 +1830,8 @@ class Facebook(object):
             return False
 
 
+# Initialize API calls
+FacebookRestClient._init_api_calls(METHODS)
 
 
 if __name__ == '__main__':
