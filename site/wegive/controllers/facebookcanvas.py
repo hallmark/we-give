@@ -75,5 +75,29 @@ class FacebookcanvasController(BaseController):
             friends = facebook.api_client.users.getInfo(friends, ['uid', 'name', 'pic_square', 'locale'])
             c.friends = friends
         
+        from wegive.model import meta, Gift
+        
+        # query DB for list of gifts
+        session = meta.Session()
+        c.gifts = session.query(Gift).filter_by(for_sale=True).order_by(Gift.created)[:24]
         
         return render('/facebook/index.tmpl')
+
+    def received(self):
+        c.received_gifts = {}
+        
+        return render('/facebook/received.tmpl')
+
+    def sent(self):
+        c.sent_gifts = {}
+        
+        return render('/facebook/sent.tmpl')
+
+    def mission(self):
+        
+        return render('/facebook/mission.tmpl')
+
+    def help(self):
+        
+        return render('/facebook/help.tmpl')
+    

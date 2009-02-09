@@ -1,19 +1,165 @@
 ## -*- coding: utf-8 -*-
 
-<fb:title>Welcome</fb:title>
+<style>
+.page_row
+{
+    margin: 20px 0;
+}
+.page_row h3
+{
+    margin-bottom: 5px;
+    padding-left: 20px;
+}
+#gift_store
+{
+    /*border: 1px solid #CCCCCC;
+    float: left;*/
+    background-color: #F7F7F7;
+    width: 630px;
+    padding: 10px 65px;
+}
+#gifts_display
+{
+    /*float: left;
+    width: 600px;*/
+    background-color: #FFFFFF;
+    padding: 8px 15px;
+    border: 1px solid #DDDDDD;
+}
+#gifts_grid
+{
+    height: 300px;
+    padding-left: 2px;
+}
+.gift_container
+{
+    float: left;
+    padding: 3px;
+    margin: 4px 0 0 4px;
+    background-color: #CCCCCC;
+}
+.gift
+{
+    height: 64px;
+    width: 64px;
+    background-color: #F7F7F7;
+}
+.gift_caption
+{
+    height: 22px;
+    width: 64px;
+    text-align: center;
+}
+#gifts_directory
+{
+    float: right;
+    width: 140px;
+    padding: 6px 9px 0;
+}
+#gifts_paginator
+{
+    padding: 4px 11px;
+}
+.fbbluebox
+{
+    background-color: #eceff6;
+    border: 1px solid #d4dae8;
+    color: #333333;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: bold;
+}
+.privacy_control
+{
+    margin-bottom: 5px;
+}
+.privacy_control input
+{
+    float: left;
+    margin-left: 6px;
+}
+.privacy_text
+{
+    margin-left: 27px;
+    padding-top: 2px;
+}
+</style>
 
-<h3>Welcome to the app</h3>
+<fb:dashboard>
+    <fb:help href="http://apps.facebook.com/test-we-give/help">Help Me!</fb:help>
+</fb:dashboard>
 
-This is just a test.<br />
+<fb:tabs>
+    <fb:tab-item href="index" title="Send a Gift" selected="true" />
+    <fb:tab-item href="received" title="Received" />
+    <fb:tab-item href="sent" title="Sent" />
+    <fb:tab-item href="mission" title="Our Mission" />
+</fb:tabs>
 
-This is being rendered in version: <fb:fbmlversion />
+<div id="gift_store">
+    <div id="gifts_display">
+        <div id="gifts_grid">
+    % for gift in c.gifts:
+            <div class="gift_container">
+                <div class="gift">
+                    ${gift.name}
+                </div>
+                <div class="gift_caption">
+                    $1
+                </div>
+            </div>
+    % endfor
+        </div>
+        <div id="gifts_paginator" class="clearfix">
+            Displaying 1 - ${len(c.gifts)} gifts.
+        </div>
+    </div>
+    <!-- div id="gifts_directory">
+        Browse:
+    </div -->
+</div>
+
+<div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
 
 <fb:if-is-app-user>
-  <p>You have added this app!.</p>
-  <fb:else><p>You have not added this app yet.  <a href="${c.facebook.get_login_url()}">Add it now</a></p>
-  <p>I can still get your friends!:</p>
-  % for friend in c.friends:
-    <fb:profile-pic uid="${friend['uid']}" />
-  % endfor
-  </fb:else>
+<fb:else>
+    <div class="page_row">
+        <div id="add-app-to-send" class="fbbluebox">
+            <a href="${c.facebook.get_login_url()}">Add this app</a> to send meaningful gifts to your friends!
+        </div>
+    </div>
+</fb:else>
 </fb:if-is-app-user>
+
+<div class="page_row">
+    <h3>Choose your recipient:</h3>
+    <fb:friend-selector />
+</div>
+
+<div class="page_row">
+    <h3>Add your message:</h3>
+    <textarea name="message" rows="4" cols="40">Your message here...</textarea>
+</div>
+
+<div class="page_row">
+    <h3>Delivery method:</h3>
+    <div id="privacy_controls">
+        <div class="privacy_control">
+            <input type="radio" id="deliver_public" name="privacy" value="public" checked="checked"/>
+            <div class="privacy_text">
+                <label for="deliver_public">Public</label><br/>
+                People will see your gift and message.
+            </div>
+        </div>
+        <div class="privacy_control">
+            <input type="radio" id="deliver_private" name="privacy" value="private"/>
+            <div class="privacy_text">
+                <label for="deliver_private">Private</label><br/>
+                People will see the gift but only the recipient will see your name and message.
+            </div>
+        </div>
+    </div>
+</div>
+
+
+

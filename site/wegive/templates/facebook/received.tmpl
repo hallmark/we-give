@@ -1,0 +1,33 @@
+## -*- coding: utf-8 -*-
+
+<style>
+#gift_case
+{
+    background-color: #F7F7F7;
+    width: 630px;
+    padding: 10px 65px;
+}
+</style>
+
+<fb:title>My Received Gifts</fb:title>
+
+<fb:dashboard>
+    <fb:help href="http://apps.facebook.com/test-we-give/help">Help Me!</fb:help>
+</fb:dashboard>
+
+<fb:tabs>
+    <fb:tab-item href="index" title="Send a Gift" />
+    <fb:tab-item href="received" title="Received" selected="true" />
+    <fb:tab-item href="sent" title="Sent" />
+    <fb:tab-item href="mission" title="Our Mission" />
+</fb:tabs>
+
+<div id="gift_case">
+    <h3>Gifts you have received from others:</h3>
+
+    % for gift in c.received_gifts:
+        ${gift.name}
+    % endfor
+</div>
+
+

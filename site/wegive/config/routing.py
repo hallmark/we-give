@@ -23,6 +23,7 @@ def make_map():
 
     # CUSTOM ROUTES HERE
     map.connect('/app/{action}', controller='facebookapp', conditions={'sub_domain':[fbsubdomain]})
+    map.connect('/{action}', controller='facebookcanvas', conditions={'sub_domain':[fbsubdomain]})
     map.connect('/', controller='facebookcanvas', action='index', conditions={'sub_domain':[fbsubdomain]})
     map.connect('/', controller='hello', action='index')
 
