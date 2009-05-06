@@ -34,6 +34,7 @@ class FacebookappController(BaseController):
         if facebook.user:
             log.debug('user: %s' % facebook.user)
             log.debug('Authorized new user for We Give, user: %s' % facebook.user)
+            # TODO: update row in UserPersona table
         
         """
         if facebook.check_session():
@@ -57,6 +58,7 @@ class FacebookappController(BaseController):
         if facebook.user:
             log.debug('user: %s' % facebook.user)
             log.debug('Removing user with uid: %s' % facebook.user)
+            # TODO: update row in UserPersona table
         
         """
         if facebook.check_session():

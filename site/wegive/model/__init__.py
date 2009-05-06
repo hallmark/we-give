@@ -2,6 +2,7 @@
 import sqlalchemy as sa
 from sqlalchemy import orm, schema, Column, Sequence, ForeignKey
 from sqlalchemy import Integer, Float, String, Unicode, UnicodeText, DateTime, TIMESTAMP, Boolean
+from sqlalchemy.databases.mysql import MSBigInteger
 import datetime
 
 from wegive.model import meta
@@ -45,6 +46,9 @@ Base = declarative_base(metadata=meta.metadata)
 #
 
 class User(Base):
+    """
+    A user of We Give, void of details specific to any social network.
+    """
     __tablename__ = 'user'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
@@ -56,12 +60,59 @@ class User(Base):
     address_id = Column(Integer, ForeignKey("address.id"))
     created = Column(TIMESTAMP(), default=now)
     
+    # locale?
+    # timezone?
+    
+    # TODO: this is temporary.  Should be moved to a UserMapping or UserPersona table
+    # NOTE: Facebook User IDs:
+    # The user ID is a 64-bit int datatype. If you're storing it in a MySQL database, use the BIGINT unsigned datatype
+    facebook_uid = Column(MSBigInteger(unsigned=True))
+    
     def __init__(self, email, password):
         self.email = email
         self.password = password
     
     def __repr__(self):
         return "<User('%s')>" % (self.email)
+
+class UserPersona(Base):
+    """
+    A user's representation on a specific social network.
+    
+    Needs to handle a super-set of all info to store from the various networks.
+    """
+    __tablename__ = 'userpersona'
+    __table_args__ = {'mysql_engine':'InnoDB'}
+    
+    id = Column(Integer, Sequence('userpersona_id_seq', optional=True), primary_key=True)
+    
+    # the base mapping info (userID, networkID, network-userID)
+    wg_user_id = Column(Integer, ForeignKey("user.id"))
+    network_id = Column(Integer, ForeignKey("network.id"))
+    network_user_id = Column(MSBigInteger(unsigned=True))
+    created = Column(TIMESTAMP(), default=now)
+    # TODO: uniqueness constraint on [network_id, network_user_id]
+    # TODO: uniqueness constraint on [wg_user_id, network_id]
+    
+    # whether the user has added/authorized the We Give app
+    added_wg = Column(Boolean, default=False)
+    
+    # the proxied email address (Facebook)
+    proxied_email = Column(Unicode(255))
+    
+    def __repr__(self):
+        return "<UserPersona(%d on network<%d>)>" % (self.wg_user_id, network_id)
+
+class SocialNetwork(Base):
+    __tablename__ = 'network'
+    __table_args__ = {'mysql_engine':'InnoDB'}
+    
+    id = Column(Integer, Sequence('network_id_seq', optional=True), primary_key=True)
+    name = Column(Unicode(255), nullable=False)
+    url = Column(Unicode(255))
+    
+    def __repr__(self):
+        return "<SocialNetwork(%s)>" % (self.name)
 
 class Charity(Base):
     __tablename__ = 'charity'
@@ -156,6 +207,8 @@ class Gift(Base):
     item_limit = Column(Integer)
     for_sale = Column(Boolean, default=False)
     created = Column(TIMESTAMP(), default=now)
+    # TODO is_program_fixed Boolean if this can only be given for a specific charity/program
+    # TODO is_cost_fixed Boolean if this can only be given at a certain price point
     
     def __init__(self, artist_id, name, for_sale=False):
         self.artist_id = artist_id
@@ -182,6 +235,9 @@ class Image(Base):
         return "<Image(%d)>" % (self.id)
 
 class Donation(Base):
+    """
+    A donation to a charity, which is also a gift sent from one user to another.
+    """
     __tablename__ = 'donation'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
@@ -194,7 +250,7 @@ class Donation(Base):
     message = Column(UnicodeText)
     transaction_id = Column(Integer, ForeignKey("transaction.id"))
     given_date = Column(DateTime, default=now)
-    # earmark = Column(Integer, ForeignKey("program.id"))
+    # earmark = Column(Integer, ForeignKey("program.id"))  # TODO: call these designations instead?
     # tracking_code = Column(String(64))
     
     def __init__(self, donor_id, recipient_id, amount, gift_id, charity_id):

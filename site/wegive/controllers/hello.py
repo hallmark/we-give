@@ -24,3 +24,14 @@ class HelloController(BaseController):
         
         return result
 
+    def mock_fps(self):
+        result = '<html><body><h2>Mock FPS Site</h2>'
+        result += '<h3>Headers</h3>'
+        for key,value in request.headers.items():
+            result += '%s: %r <br>'%(key, value)
+        result += 'request.url: %s'%request.url
+        result += '</body></html>'
+        log.debug(result)
+        
+        return result
+

@@ -1,0 +1,166 @@
+## -*- coding: utf-8 -*-
+
+<style>
+a.anchor_button
+{
+    text-decoration: none;
+    padding: 3px 18px 4px;
+}
+.page_row
+{
+    margin: 20px 0;
+    padding-left: 20px;
+}
+.page_row h3
+{
+    margin-bottom: 5px;
+}
+#gift_store
+{
+    /*border: 1px solid #CCCCCC;
+    float: left;*/
+    background-color: #F7F7F7;
+    width: 630px;
+    padding: 10px 65px;
+}
+.gift_store_row
+{
+    margin: 20px 0;
+}
+#gift_box
+{
+    /*float: left;
+    width: 600px;*/
+    background-color: #FFFFFF;
+    padding: 8px 15px;
+    border: 1px solid #DDDDDD;
+}
+#gifts_grid
+{
+    height: 300px;
+    padding-left: 2px;
+}
+.gift_container
+{
+    float: left;
+    padding: 3px;
+    margin: 4px 0 0 4px;
+    background-color: #CCCCCC;
+}
+.gift
+{
+    height: 64px;
+    width: 64px;
+    background-color: #F7F7F7;
+}
+.gift_caption
+{
+    height: 22px;
+    width: 64px;
+    text-align: center;
+}
+#gifts_directory
+{
+    float: right;
+    width: 140px;
+    padding: 6px 9px 0;
+}
+#gifts_paginator
+{
+    padding: 4px 11px;
+}
+.fbbluebox
+{
+    background-color: #eceff6;
+    border: 1px solid #d4dae8;
+    color: #333333;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: bold;
+}
+.privacy_control
+{
+    margin-bottom: 5px;
+}
+.privacy_control input
+{
+    float: left;
+    margin-left: 6px;
+}
+.privacy_text
+{
+    margin-left: 27px;
+    padding-top: 2px;
+}
+</style>
+
+<fb:dashboard>
+    <fb:help href="http://apps.facebook.com/test-we-give/help">Help Me!</fb:help>
+</fb:dashboard>
+
+<fb:tabs>
+    <fb:tab-item href="index" title="Send a Gift" selected="true" />
+    <fb:tab-item href="received" title="Received" />
+    <fb:tab-item href="sent" title="Sent" />
+    <fb:tab-item href="mission" title="Our Mission" />
+</fb:tabs>
+
+<div id="gift_store">
+    <div id="gift_box">
+        <div id="gift_display">
+            %if c.recipient_id:
+                To: <fb:profile-pic uid="${c.recipient_id}" size="q" />
+            %endif
+            Gift info
+        </div>
+    </div>
+    <div class="gift_store_row">
+        Your donation of $${c.donation_amt} will be processed through Amazon Payments.
+    </div>
+    <div class="gift_store_row">
+        <%doc><form id="continue_to_amz" name="continue_to_amz" action="${c.fps_url}" method="post" onsubmit="blipForm(this);">
+##            <input type="hidden" name="donation_id" value="${c.donation_id}" />
+            <input type="hidden" name="awsSignature" value="${c.aws_sig}" />
+            <input type="hidden" name="callerKey" value="${c.aws_key}" />
+            <input type="hidden" name="callerReference" value="${c.fps_caller_ref}" />
+            <input type="hidden" name="paymentReason" value="${c.fps_pymt_reason}" />
+            <input type="hidden" name="transactionAmount" value="${c.fps_trans_amt}" />
+            <input type="hidden" name="pipelineName" value="${c.fps_pipeline_name}" />
+            <input type="hidden" name="returnURL" value="${c.fps_return_url}" />
+##            <input type="hidden" name="version" value="${c.fps_version}" />
+            <input type="submit" value="Continue with donation" class="inputsubmit" onclick="alert('foo');" />
+            <a href="index">Cancel</a>
+        </form>
+        <br></%doc>
+        <a href="${c.direct_url}" class="inputbutton anchor_button">Continue with donation</a> <a href="index">Cancel</a>
+##        <div id="testdiv">Test text</div>
+    </div>
+</div>
+
+<%doc><script>
+<!--
+    var testDiv = document.getElementById("testdiv");
+    testDiv.setTextValue("Changed text!");
+    
+    var amzForm = document.getElementById("continue_to_amz");
+    testDiv.setTextValue("Number of child nodes: " + amzForm.getChildNodes().length);
+    testDiv.setTextValue("First name: " + amzForm.getChildNodes()[0].getName());
+    
+    function blipForm(form)
+    {
+        alert("blipForm");
+        var frm = document.getElementById("continue_to_amz");
+        var inpList = frm.getChildNodes();
+        for( var i=0; i<inpList.length; i++)
+        {
+            var oneNode = inpList[i];
+            if (oneNode.getName() == 'fb_sig')
+                oneNode.setDisabled(true);
+        }
+    }
+//-->
+</script></%doc>
+
+<div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
+
+

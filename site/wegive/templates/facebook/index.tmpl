@@ -4,11 +4,15 @@
 .page_row
 {
     margin: 20px 0;
+    padding-left: 20px;
 }
 .page_row h3
 {
     margin-bottom: 5px;
-    padding-left: 20px;
+}
+.placeholder
+{
+    color: #777777;
 }
 #gift_store
 {
@@ -131,6 +135,8 @@
 </fb:else>
 </fb:if-is-app-user>
 
+<form id="gift_form" name="gift_form" action="send_gift" method="post">
+
 <div class="page_row">
     <h3>Choose your recipient:</h3>
     <fb:friend-selector />
@@ -138,7 +144,12 @@
 
 <div class="page_row">
     <h3>Add your message:</h3>
-    <textarea name="message" rows="4" cols="40">Your message here...</textarea>
+    <textarea id="gift_message" name="message" rows="4" cols="40" class="placeholder" onfocus="if(this.getValue()=='Your message here...'){this.setValue('');this.removeClassName('placeholder');}" onblur="if(this.getValue()==''){this.setValue('Your message here...');this.addClassName('placeholder');}">Your message here...</textarea>
+</div>
+
+<div class="page_row">
+    <h3>Specify the amount:</h3>
+    $ <input type="text" name="amount" class="inputtext" value="1.00" /> USD
 </div>
 
 <div class="page_row">
@@ -161,5 +172,10 @@
     </div>
 </div>
 
+<div class="page_row">
+    <input type="submit" value="Continue" class="inputsubmit" />
+</div>
+
+</form>
 
 

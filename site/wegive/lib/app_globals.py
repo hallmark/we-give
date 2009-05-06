@@ -1,3 +1,7 @@
+from pylons import config
+
+import fpys
+
 """The application's Globals object"""
 
 class Globals(object):
@@ -11,4 +15,5 @@ class Globals(object):
         'app_globals' variable
 
         """
-        pass
+        self.fps_client = fpys.FlexiblePaymentClient(config['AWS_KEY_ID'],
+                                                     config['AWS_SECRET_KEY'])
