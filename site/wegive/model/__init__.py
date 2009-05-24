@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+#
+# All portions of the code written by Mark Ture are Copyright (c) 2009
+# Mark Ture. All rights reserved.
+##############################################################################
 """The application's model objects"""
 import sqlalchemy as sa
 from sqlalchemy import orm, schema, Column, Sequence, ForeignKey
@@ -15,13 +20,14 @@ def init_model(engine):
     #                           autoload_with=engine)
     #orm.mapper(Reflected, reflected_table)
 
-    sm = orm.sessionmaker(autoflush=True, autocommit=False, bind=engine)
+    sm = orm.sessionmaker(autoflush=True, autocommit=False, expire_on_commit=True, bind=engine)
 
     meta.engine = engine
     meta.Session = orm.scoped_session(sm)
 
 
 def now():
+    # TODO: is this UTC now?
     return datetime.datetime.now()
 
 ## Non-reflected tables may be defined and mapped at module level
@@ -49,7 +55,7 @@ class User(Base):
     """
     A user of We Give, void of details specific to any social network.
     """
-    __tablename__ = 'user'
+    __tablename__ = 'wg_user'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
     id = Column(Integer, Sequence('user_id_seq', optional=True), primary_key=True)
@@ -57,8 +63,8 @@ class User(Base):
     password = Column(String(50), nullable=False)
     first_name = Column(Unicode(64))
     last_name = Column(Unicode(64))
-    address_id = Column(Integer, ForeignKey("address.id"))
-    created = Column(TIMESTAMP(), default=now)
+    address_id = Column(Integer, ForeignKey("wg_address.id"))
+    created = Column(TIMESTAMP(), default=now)  # TODO: is this UTC?????
     
     # locale?
     # timezone?
@@ -81,14 +87,14 @@ class UserPersona(Base):
     
     Needs to handle a super-set of all info to store from the various networks.
     """
-    __tablename__ = 'userpersona'
+    __tablename__ = 'wg_userpersona'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
     id = Column(Integer, Sequence('userpersona_id_seq', optional=True), primary_key=True)
     
     # the base mapping info (userID, networkID, network-userID)
-    wg_user_id = Column(Integer, ForeignKey("user.id"))
-    network_id = Column(Integer, ForeignKey("network.id"))
+    wg_user_id = Column(Integer, ForeignKey("wg_user.id"))
+    network_id = Column(Integer, ForeignKey("wg_network.id"))
     network_user_id = Column(MSBigInteger(unsigned=True))
     created = Column(TIMESTAMP(), default=now)
     # TODO: uniqueness constraint on [network_id, network_user_id]
@@ -104,7 +110,10 @@ class UserPersona(Base):
         return "<UserPersona(%d on network<%d>)>" % (self.wg_user_id, network_id)
 
 class SocialNetwork(Base):
-    __tablename__ = 'network'
+    """
+    A network with which We Give has integrated, such as Facebook, MySpace, LinkedIn, or Bebo.
+    """
+    __tablename__ = 'wg_network'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
     id = Column(Integer, Sequence('network_id_seq', optional=True), primary_key=True)
@@ -115,12 +124,15 @@ class SocialNetwork(Base):
         return "<SocialNetwork(%s)>" % (self.name)
 
 class Charity(Base):
-    __tablename__ = 'charity'
+    """
+    A charity, such as ACWP or Seva.
+    """
+    __tablename__ = 'wg_charity'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
     id = Column(Integer, Sequence('charity_id_seq', optional=True), primary_key=True)
     name = Column(Unicode(255), nullable=False)
-    address_id = Column(Integer, ForeignKey("address.id"))
+    address_id = Column(Integer, ForeignKey("wg_address.id"))
     url = Column(Unicode(255))
     short_code = Column(String(10), nullable=False)
     created = Column(TIMESTAMP(), default=now)
@@ -133,13 +145,16 @@ class Charity(Base):
         return "<Charity(%s)>" % (self.name)
 
 class Program(Base):
-    __tablename__ = 'program'
+    """
+    A charity program, such as the education program with ACWP, or the vaccination program.
+    """
+    __tablename__ = 'wg_program'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
     id = Column(Integer, Sequence('program_id_seq', optional=True), primary_key=True)
     name = Column(Unicode(255), nullable=False)
     description = Column(UnicodeText)
-    charity_id = Column(Integer, ForeignKey("charity.id"))
+    charity_id = Column(Integer, ForeignKey("wg_charity.id"))
     url = Column(Unicode(255))
     created = Column(TIMESTAMP(), default=now)
     
@@ -156,7 +171,7 @@ class Address(Base):
        http://www.oasis-open.org/committees/ciq/ciq.html#6
        http://docs.oasis-open.org/ciq/v3.0/prd02/specs/ciq-specs-v3-prd2.html#_Toc170648866
     """
-    __tablename__ = 'address'
+    __tablename__ = 'wg_address'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
     id = Column(Integer, Sequence('address_id_seq', optional=True), primary_key=True)
@@ -193,17 +208,20 @@ class Address(Base):
                                                         self.country_name_code)
 
 class Gift(Base):
-    __tablename__ = 'gift'
+    """
+    A gift that appears in the gift shop.
+    """
+    __tablename__ = 'wg_gift'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
     id = Column(Integer, Sequence('gift_id_seq', optional=True), primary_key=True)
-    artist_id = Column(Integer, ForeignKey("user.id"))
-    image_id = Column(Integer, ForeignKey("image.id"))
+    artist_id = Column(Integer, ForeignKey("wg_user.id"))
+    image_id = Column(Integer, ForeignKey("wg_image.id"))
     name = Column(Unicode(64), nullable=False)
     description = Column(UnicodeText)
     base_cost = Column(Float, default=1.0)
-    charity_id = Column(Integer, ForeignKey("charity.id"))
-    program_id = Column(Integer, ForeignKey("program.id"))
+    charity_id = Column(Integer, ForeignKey("wg_charity.id"))
+    program_id = Column(Integer, ForeignKey("wg_program.id"))
     item_limit = Column(Integer)
     for_sale = Column(Boolean, default=False)
     created = Column(TIMESTAMP(), default=now)
@@ -219,7 +237,14 @@ class Gift(Base):
         return "<Gift(artist<%d>,'%s')>" % (self.artist_id, self.name)
 
 class Image(Base):
-    __tablename__ = 'image'
+    """
+    A gift image.
+    
+    Published gift images are located at images.wegivetofriends.org.
+    
+    Unpublished gift images and original assets are located at assets.wegivetofriends.org.
+    """
+    __tablename__ = 'wg_image'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
     id = Column(Integer, Sequence('image_id_seq', optional=True), primary_key=True)
@@ -238,17 +263,18 @@ class Donation(Base):
     """
     A donation to a charity, which is also a gift sent from one user to another.
     """
-    __tablename__ = 'donation'
+    __tablename__ = 'wg_donation'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
     id = Column(Integer, Sequence('donation_id_seq', optional=True), primary_key=True)
-    donor_id = Column(Integer, ForeignKey("user.id"))
-    recipient_id = Column(Integer, ForeignKey("user.id"))
+    donor_id = Column(Integer, ForeignKey("wg_user.id"))
+    recipient_id = Column(Integer, ForeignKey("wg_user.id"))
     amount = Column(Float)
-    gift_id = Column(Integer, ForeignKey("gift.id"), nullable=False)
-    charity_id = Column(Integer, ForeignKey("charity.id"), nullable=False)
+    gift_id = Column(Integer, ForeignKey("wg_gift.id"), nullable=False)
+    charity_id = Column(Integer, ForeignKey("wg_charity.id"), nullable=False)
     message = Column(UnicodeText)
-    transaction_id = Column(Integer, ForeignKey("transaction.id"))
+    pending = Column(Boolean, default=True)
+    transaction_id = Column(Integer, ForeignKey("wg_transaction.id"))
     given_date = Column(DateTime, default=now)
     # earmark = Column(Integer, ForeignKey("program.id"))  # TODO: call these designations instead?
     # tracking_code = Column(String(64))
@@ -259,12 +285,16 @@ class Donation(Base):
         self.amount = amount
         self.gift_id = gift_id
         self.charity_id = charity_id
+        self.pending = True
     
     def __repr__(self):
         return "<Donation(donor<%d>, recipient<%d>, $%.2f)>" % (self.donor_id, self.recipient_id, self.amount)
 
 class Transaction(Base):
-    __tablename__ = 'transaction'
+    """
+    An Amazon Flexible Payments System (FPS) transaction.
+    """
+    __tablename__ = 'wg_transaction'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
     id = Column(Integer, Sequence('transaction_id_seq', optional=True), primary_key=True)
