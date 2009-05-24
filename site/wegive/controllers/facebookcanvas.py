@@ -166,12 +166,17 @@ class FacebookcanvasController(BaseController):
             recipient_info = facebook.api_client.users.getInfo([c.recipient_id], ['name', 'pic_square', 'locale'])[0]
             log.debug('recipient name: %s, pic: %s, locale: %s' % (recipient_info['name'], recipient_info['pic_square'], recipient_info['locale']) )
                 
-        from wegive.model import meta, Charity
+        from wegive.model import meta, Charity, Gift
         session = meta.Session()
         
         charity_id = request.params.get('charity_val')
         charity = session.query(Charity).filter_by(id=charity_id).one()
         c.charity_name = charity.name
+        
+        gift_id = request.params.get('gift_id')
+        c.gift = session.query(Gift).filter_by(id=gift_id).one()
+        
+        c.message = request.params.get('message')
         
         # compute parameters for request to Co-Branded FPS pages
         

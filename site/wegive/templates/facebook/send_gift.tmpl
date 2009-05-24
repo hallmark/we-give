@@ -38,7 +38,40 @@ a.anchor_button
     background-color: #FFFFFF;
     padding: 8px 15px;
     border: 1px solid #DDDDDD;
+    margin-top: 4px;
 }
+.recipient_pic
+{
+    position: absolute;
+}
+.recipient_name
+{
+    color: #888888;
+    font-weight: bold;
+}
+.gift_content
+{
+    min-height: 50px;
+    padding: 0 0 0 60px;
+}
+.gift_and_message
+{
+    padding: 15px 8px 8px 0;
+}
+.gift_image
+{
+    margin: 0 0 0 15px;
+    float: left;
+}
+.gift_message
+{
+    background: #f7f7f7;
+    padding: 15px 10px;
+    margin-left: 100px;
+    border: 1px solid #e7e7e7;
+}
+
+
 #gifts_grid
 {
     height: 300px;
@@ -120,12 +153,23 @@ a.anchor_button
         </p>
     </fb:error>
 %else:
+    <h3>Preview your gift:</h3>
+
     <div id="gift_box">
         <div id="gift_display">
             %if c.recipient_id:
-                To: <fb:profile-pic uid="${c.recipient_id}" size="q" />
+                <div class="recipient_pic"><fb:profile-pic uid="${c.recipient_id}" size="q" linked="false" /></div>
+                <div class="gift_content">
+                    To: <span class="recipient_name"><fb:name uid="${c.recipient_id}" linked="false" /></span>
+                    <div class="gift_and_message">
+                        <div class="gift_image"><img src="http://images.wegivetofriends.org/dev/scratch/orb.png" alt="${c.gift.name}"></div>
+                        <div class="gift_message">
+                            ${h.literal(h.nl2br(c.message))}
+                        </div>
+                        <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
+                    </div>
+                </div>
             %endif
-            Gift info
         </div>
     </div>
     <div class="gift_store_row">
