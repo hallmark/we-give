@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+#
+# All portions of the code written by Mark Ture are Copyright (c) 2009
+# Mark Ture. All rights reserved.
+##############################################################################
 import logging
 
 from pylons import request, response, session, tmpl_context as c

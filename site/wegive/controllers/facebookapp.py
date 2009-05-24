@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+#
+# All portions of the code written by Mark Ture are Copyright (c) 2009
+# Mark Ture. All rights reserved.
+##############################################################################
+"""
+Handles Facebook callback requests for authorizing or removing a user from the
+We Give application.
+"""
 import logging
 
 from pylons import request, response, session, tmpl_context as c

@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+#
+# All portions of the code written by Mark Ture are Copyright (c) 2009
+# Mark Ture. All rights reserved.
+##############################################################################
 """The base Controller API
 
 Provides the BaseController class for subclassing.

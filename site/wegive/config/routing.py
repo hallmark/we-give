@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+#
+# All portions of the code written by Mark Ture are Copyright (c) 2009
+# Mark Ture. All rights reserved.
+##############################################################################
 """Routes configuration
 
 The more specific and detailed routes should be defined first so they
@@ -13,6 +18,8 @@ def make_map():
                  always_scan=config['debug'])
     map.minimization = False
     map.sub_domains = True
+    # TODO: explicit=True ?  p.210 in Pylons Book
+    # book uses map.minimize.  is this a typo?
     
     fbsubdomain = config['app_conf']['pyfacebook.subdomain']
     

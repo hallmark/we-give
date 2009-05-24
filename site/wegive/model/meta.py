@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+#
+# All portions of the code written by Mark Ture are Copyright (c) 2009
+# Mark Ture. All rights reserved.
+##############################################################################
 """SQLAlchemy Metadata and Session object"""
 from sqlalchemy import MetaData
 from sqlalchemy.orm import scoped_session, sessionmaker
