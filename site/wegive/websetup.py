@@ -1,4 +1,9 @@
 """Setup the WeGive application"""
+# -*- coding: utf-8 -*-
+#
+# All portions of the code written by Mark Ture are Copyright (c) 2009
+# Mark Ture. All rights reserved.
+##############################################################################
 import logging
 from pylons import config
 from paste.deploy.converters import asbool
@@ -22,15 +27,24 @@ def setup_app(command, conf, vars):
 
     # add some test data if we're in debug mode
     if asbool(config['debug']):
-        from wegive.model import User, Gift
+        from wegive.model import User, Gift, Charity
         session = meta.Session()
         
+        # add test charities
+        charity_1 = Charity(u'Aid to Children Without Parents', 'acwp')
+        charity_1.url = u'http://www.acwp.org/'
+        charity_2 = Charity(u'Test Charity', 'test1')
+        session.add_all([charity_1, charity_2])
+        session.flush()
+        
+        # add test users
         test_user_1 = User(u'test1@example.com', 'welcome1')
         test_user_2 = User(u'test2@example.com', 'welcome1')
         test_artist_1 = User(u'artist1@example.com', 'welcome1')
         session.add_all([test_user_1,test_user_2,test_artist_1])
         session.flush()
         
+        # add test gifts
         test_gift_1 = Gift(test_artist_1.id, u'Test Gift 1', True)
         session.add(test_gift_1)
         

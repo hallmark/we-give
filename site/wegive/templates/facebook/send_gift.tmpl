@@ -1,4 +1,8 @@
 ## -*- coding: utf-8 -*-
+##
+## All portions of the code written by Mark Ture are Copyright (c) 2009
+## Mark Ture. All rights reserved.
+##############################################################################
 
 <style>
 a.anchor_button
@@ -106,6 +110,16 @@ a.anchor_button
 </fb:tabs>
 
 <div id="gift_store">
+%if c.error_msg:
+    <fb:error message="There was an error with your request">
+        <p>
+            ${c.error_msg}
+        <p>
+        <p>
+            Please go back and try again.
+        </p>
+    </fb:error>
+%else:
     <div id="gift_box">
         <div id="gift_display">
             %if c.recipient_id:
@@ -115,7 +129,7 @@ a.anchor_button
         </div>
     </div>
     <div class="gift_store_row">
-        Your donation of $${c.donation_amt} will be processed through Amazon Payments.
+        Your donation of $${c.donation_amt} to ${c.charity_name} will be processed through Amazon Payments.
     </div>
     <div class="gift_store_row">
         <%doc><form id="continue_to_amz" name="continue_to_amz" action="${c.fps_url}" method="post" onsubmit="blipForm(this);">
@@ -135,6 +149,7 @@ a.anchor_button
         <a href="${c.direct_url}" class="inputbutton anchor_button">Continue with donation</a> <a href="index">Cancel</a>
 ##        <div id="testdiv">Test text</div>
     </div>
+%endif
 </div>
 
 <%doc><script>

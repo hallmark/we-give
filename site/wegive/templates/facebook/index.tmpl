@@ -1,6 +1,14 @@
 ## -*- coding: utf-8 -*-
+##
+## All portions of the code written by Mark Ture are Copyright (c) 2009
+## Mark Ture. All rights reserved.
+##############################################################################
 
 <style>
+#add_profile_box
+{
+    float: right;
+}
 .page_row
 {
     margin: 20px 0;
@@ -42,11 +50,22 @@
     margin: 4px 0 0 4px;
     background-color: #CCCCCC;
 }
-.gift
+a.gift
 {
+    display: block;
     height: 64px;
     width: 64px;
     background-color: #F7F7F7;
+}
+a.gift:hover
+{
+    background-color: #E7E7E7;
+}
+.gift img
+{
+    border: 0 none;
+    width: 64px;
+    height: 64px;
 }
 .gift_caption
 {
@@ -63,6 +82,27 @@
 #gifts_paginator
 {
     padding: 4px 11px;
+}
+.gift_preview
+{
+    position: absolute;
+    left: 430px;
+    width: 105px;
+    height: 130px;
+}
+.selected_gift_preview
+{
+    border: 2px solid #eeeeee;
+}
+#preview_name
+{
+    color: #888888;
+}
+.preview_img_cnt
+{
+    width: 64px;
+    height: 64px;
+    margin: 18px 0 0 20px;
 }
 .fbbluebox
 {
@@ -93,6 +133,13 @@
     <fb:help href="http://apps.facebook.com/test-we-give/help">Help Me!</fb:help>
 </fb:dashboard>
 
+<fb:if-section-not-added section="profile">
+    <div id="add_profile_box">
+        <fb:add-section-button section="profile" />
+    </div>
+    <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
+</fb:if-section-not-added>
+
 <fb:tabs>
     <fb:tab-item href="index" title="Send a Gift" selected="true" />
     <fb:tab-item href="received" title="Received" />
@@ -105,9 +152,9 @@
         <div id="gifts_grid">
     % for gift in c.gifts:
             <div class="gift_container">
-                <div class="gift">
-                    ${gift.name}
-                </div>
+                <a href="#" onclick="selectGift(${gift.id}, '${gift.name}', 'http://images.wegivetofriends.org/dev/scratch/orb.png'); return false;" title="${gift.name}" class="gift">
+                    <img src="http://images.wegivetofriends.org/dev/scratch/orb.png" alt="${gift.name}">
+                </a>
                 <div class="gift_caption">
                     $1
                 </div>
@@ -135,11 +182,107 @@
 </fb:else>
 </fb:if-is-app-user>
 
-<form id="gift_form" name="gift_form" action="send_gift" method="post">
+<script>
+<!--
+    function alltrim(str)
+    {
+        return str.replace(/^\s+|\s+$/g, '');
+    }
+    
+    function isValidAmount(str)
+    {
+        if (str == null)
+            return false;
+        
+        str = alltrim(str);
+        return /^[1-9]\d*(\.\d{2})?$/.test(str);
+    }
+    
+    function displayError(title, message, context)
+    {
+        if (!context)
+        {
+            new Dialog(Dialog.DIALOG_POP).showMessage(title, message);
+        }
+        else
+        {
+            new Dialog(Dialog.DIALOG_CONTEXTUAL).setContext(context).showMessage(title, message);
+        }
+    }
+    
+    function checkForm(form)
+    {
+        var params = form.serialize();
+        
+        if (params.gift_id == '')
+        {
+            displayError("Error", "Please select a gift.");
+            return false;
+        }
+        else if (params.friend_selector_id == null || params.friend_selector_id == '')
+        {
+            displayError("Error", "Please select a recipient.");
+            return false;
+        }
+        else if (alltrim(params.amount) == '')
+        {
+            var context = document.getElementById('gift_amount');
+            var msg = "Please specify an amount for the donation. (empty)";
+            displayError("Error", msg, context);
+            return false;
+        }
+        else if (!isValidAmount(params.amount))
+        {
+            var context = document.getElementById('gift_amount');
+            var msg = "Please specify a valid amount for the donation.";
+            displayError("Error", msg, context);
+            return false;
+        }
+        else if (params.charity_val == '')
+        {
+            var context = document.getElementById('gift_charity');
+            var msg = "Please select a charity.";
+            displayError("Error", msg, context);
+            return false;
+        }
+        else if (params.message == 'Your message here...' || alltrim(params.message) == '')
+        {
+            var context = document.getElementById('gift_message');
+            var msg = "Please add your message to the recipient.";
+            displayError("Error", msg, context);
+            return false;
+        }
+        
+        return true;
+    }
+    
+    function selectGift(giftId, name, imgSrc)
+    {
+        var gidEl = document.getElementById('gift_id');
+        gidEl.setValue(giftId);
+        var imgEl = document.getElementById('preview_img');
+        imgEl.setSrc(imgSrc);
+        var nameEl = document.getElementById('preview_name');
+        nameEl.setTextValue(name);
+        var previewEl = document.getElementById('preview_box');
+        previewEl.addClassName('selected_gift_preview');
+    }
+//-->
+</script>
+
+<form id="gift_form" name="gift_form" action="send_gift" method="post" onsubmit="return checkForm(this);">
+
+<input type="hidden" name="gift_id" id="gift_id" value="" />
 
 <div class="page_row">
     <h3>Choose your recipient:</h3>
     <fb:friend-selector />
+</div>
+
+<div class="gift_preview" id="preview_box">
+    <div class="preview_img_cnt">
+        <img src="http://images.wegivetofriends.org/dev/scratch/blank.gif" id="preview_img"><span id="preview_name"></span>
+    </div>
 </div>
 
 <div class="page_row">
@@ -149,7 +292,23 @@
 
 <div class="page_row">
     <h3>Specify the amount:</h3>
-    $ <input type="text" name="amount" class="inputtext" value="1.00" /> USD
+    $ <input id="gift_amount" type="text" name="amount" class="inputtext" value="1.00" /> USD
+</div>
+
+<div class="page_row">
+    <h3>Select the charity:</h3>
+        <select name="charity_val" id="gift_charity">
+    % for charity in c.charities:
+            <option value="${charity.id}">${charity.name}</option>
+    % endfor
+        </select>
+##    <fb:fbml version="1.1">
+##        <fb:typeahead-input name="charity" autocomplete="off" size="40">
+##    % for charity in c.charities:
+##            <fb:typeahead-option value="${charity.id}">${charity.name}</fb:typeahead-option>
+##    % endfor
+##        </fb:typeahead-input>
+    </fb:fbml>
 </div>
 
 <div class="page_row">

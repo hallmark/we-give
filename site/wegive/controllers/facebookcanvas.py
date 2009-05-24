@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+#
+# All portions of the code written by Mark Ture are Copyright (c) 2009
+# Mark Ture. All rights reserved.
+##############################################################################
+"""
+Handles requests to the We Give Facebook application's canvas pages.
+
+Canvas pages are the app's pages on Facebook that a user visits to send gifts,
+view sent or received gifts, and find help.
+"""
 import logging
 
 from pylons import request, response, session, tmpl_context as c
@@ -82,6 +93,13 @@ class FacebookcanvasController(BaseController):
             current_user = facebook.uid
         """
         
+        #
+        # TODOs for canvas page:
+        #  - if not added, show message: "To send a gift, add this application"
+        #  - if not added but received gift(s), show gifts and message "Add application and to profile to display gifts"
+        #  - if added, and there are pending gifts, show these
+        #
+        
         current_user = None
         facebook.process_request()
         if facebook.user:
@@ -92,6 +110,7 @@ class FacebookcanvasController(BaseController):
             current_user = facebook.canvas_user
         
         if current_user:
+            # TODO: need to handle "URLError: urlopen error" exceptions thrown from api calls
             info = facebook.api_client.users.getInfo([current_user], ['name', 'first_name', 'last_name', 'pic_square', 'locale'])[0]
             log.debug('name: %s, pic: %s, locale: %s' % (info['name'], info['pic_square'], info['locale']) )
             friends = facebook.api_client.friends.get(uid=current_user)
@@ -107,15 +126,36 @@ class FacebookcanvasController(BaseController):
             #
             # TODO: we cannot store the first_name, last_name - the user needs to provide it to us
             # TODO: need a way to map existing Users to Facebook users
+            
+            self._update_user_fbml_by_fbid(current_user)
         
-        from wegive.model import meta, Gift
+        from wegive.model import meta, Gift, Charity
         
         # query DB for list of gifts
         session = meta.Session()
         c.gifts = session.query(Gift).filter_by(for_sale=True).order_by(Gift.created)[:24]
         
+        c.charities = session.query(Charity).order_by(Charity.created)
+        
+        # URL for a gift:
+        # images.wegivetofriends.org/dev/gifts/[id].png
+        
+        # for (offset, item) in enumerate(c.gifts):
+        #    do something on item and offset
+        # or: list comprehension: [c * i for (i, c) in enumerate(c.gifts)]
+        
         return render('/facebook/index.tmpl')
 
+    def _update_user_fbml_by_fbid(self, fb_uid):
+        # TODO: get total number of gifts and enough recent gifts to fill up all the profile boxes
+        
+        skinny_content = '<fb:subtitle><a href="http://apps.facebook.com/test-we-give/allgifts?uid=">1 gift</a><fb:action href="http://apps.facebook.com/test-we-give/">Give to a Friend</fb:action></fb:subtitle>subtitled profile content'
+        
+        boxes_content = '<fb:wide>Wide content</fb:wide><fb:narrow>Narrow content</fb:narrow><br>Common content here.'
+        
+        set_fbml_res = facebook.api_client.profile.setFBML(uid=fb_uid, profile_main=skinny_content, profile=boxes_content)
+        log.debug('setFBML response: ' + repr(set_fbml_res))
+        
     def send_gift(self):
         log_fb_request(request)
         facebook.process_request()
@@ -125,6 +165,13 @@ class FacebookcanvasController(BaseController):
         if c.recipient_id:
             recipient_info = facebook.api_client.users.getInfo([c.recipient_id], ['name', 'pic_square', 'locale'])[0]
             log.debug('recipient name: %s, pic: %s, locale: %s' % (recipient_info['name'], recipient_info['pic_square'], recipient_info['locale']) )
+                
+        from wegive.model import meta, Charity
+        session = meta.Session()
+        
+        charity_id = request.params.get('charity_val')
+        charity = session.query(Charity).filter_by(id=charity_id).one()
+        c.charity_name = charity.name
         
         # compute parameters for request to Co-Branded FPS pages
         
@@ -164,6 +211,7 @@ class FacebookcanvasController(BaseController):
         
         # render page template for user to click 'Continue with donation'
         
+        #c.error_msg = 'Charity not found'
         return render('/facebook/send_gift.tmpl')
 
     def wrap_it_up(self):
