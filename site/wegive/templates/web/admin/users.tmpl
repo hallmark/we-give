@@ -8,20 +8,10 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8" >
-    <title>We Give Admin</title>
+    <title>Users - We Give Admin</title>
 </head>
 <body>
-    <h2>We Give Admin</h2>
+    <h2>Users - We Give Admin</h2>
     
-    <p>
-        Welcome to the admin console for We Give to Friends.
-    </p>
-    <p>
-        Stuff to put here:
-        <ul>
-            <li>View: users, gifts, charities, donations</li>
-            <li>Create/edit: charities, gifts</li>
-            <li>Dashboard (eventually): stats, errors, support requests, links to Splunk/Ganglia, etc</li>
-        </ul>
-    </p>
+    ${c.user_table(value=c.user_table_value)}
 </body>

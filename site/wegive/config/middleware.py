@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+#
+# All portions of the code written by Mark Ture are Copyright (c) 2009
+# Mark Ture. All rights reserved.
+##############################################################################
 """Pylons middleware initialization"""
 from beaker.middleware import CacheMiddleware, SessionMiddleware
 from paste.cascade import Cascade
@@ -9,6 +14,7 @@ from pylons.middleware import ErrorHandler, StatusCodeRedirect
 from pylons.wsgiapp import PylonsApp
 from routes.middleware import RoutesMiddleware
 import facebook
+import tw.api as twa
 
 from wegive.config.environment import load_environment
 
@@ -40,6 +46,12 @@ def make_app(global_conf, full_stack=True, **app_conf):
     # CUSTOM MIDDLEWARE HERE (filtered by error handling middlewares)
     from facebook.wsgi import create_pylons_facebook_middleware
     app = create_pylons_facebook_middleware(app, app_conf)
+    
+    # Using ToscaWidgets middleware for Sprox components. Take this out if removing Sprox usage.
+    app = twa.make_middleware(app, {
+        'toscawidgets.framework': 'pylons',
+        'toscawidgets.framework.default_view': 'mako'
+    })
     
     # Routing/Session/Cache Middleware
     app = RoutesMiddleware(app, config['routes.map'])
