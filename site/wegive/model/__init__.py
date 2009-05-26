@@ -21,8 +21,8 @@ def init_model(engine):
 
 
 def now():
-    # TODO: is this UTC now?
-    return datetime.datetime.now()
+    """Use UTC time for all timestamps to avoid ambiguity"""
+    return datetime.datetime.utcnow()
 
 from sqlalchemy.ext.declarative import declarative_base
 
