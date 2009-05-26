@@ -27,8 +27,13 @@ def setup_app(command, conf, vars):
 
     # add some test data if we're in debug mode
     if asbool(config['debug']):
-        from wegive.model import User, Gift, Charity
+        from wegive.model import User, Gift, Charity, SocialNetwork
         session = meta.Session()
+        
+        # add Facebook network
+        network_1 = SocialNetwork(u'Facebook', u'http://www.facebook.com/')
+        session.add(network_1)
+        session.flush()
         
         # add test charities
         charity_1 = Charity(u'Aid to Children Without Parents', 'acwp')
@@ -38,9 +43,15 @@ def setup_app(command, conf, vars):
         session.flush()
         
         # add test users
-        test_user_1 = User(u'test1@example.com', 'welcome1')
-        test_user_2 = User(u'test2@example.com', 'welcome1')
-        test_artist_1 = User(u'artist1@example.com', 'welcome1')
+        test_user_1 = User()
+        test_user_1.email = u'test1@example.com'
+        test_user_1.password = 'welcome1'
+        test_user_2 = User()
+        test_user_2.email = u'test2@example.com'
+        test_user_2.password = 'welcome1'
+        test_artist_1 = User()
+        test_artist_1.email = u'artist1@example.com'
+        test_artist_1.password = 'welcome1'
         session.add_all([test_user_1,test_user_2,test_artist_1])
         session.flush()
         

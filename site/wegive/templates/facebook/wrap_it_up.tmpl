@@ -100,24 +100,51 @@
 </fb:dashboard>
 
 <fb:tabs>
-    <fb:tab-item href="index" title="Send a Gift" selected="true" />
+    <fb:tab-item href="index" title="Send a Gift" />
     <fb:tab-item href="received" title="Received" />
     <fb:tab-item href="sent" title="Sent" />
     <fb:tab-item href="mission" title="Our Mission" />
 </fb:tabs>
 
 <div id="gift_store">
+%if c.error_msg:
+    <fb:error message="There was an error with your request">
+        <p>
+            ${c.error_msg}
+        <p>
+        <p>
+            Please go back and try again.
+        </p>
+    </fb:error>
+%else:
     <div id="gift_box">
         <div id="gift_display">
-            %if c.recipient_id:
-                To: <fb:profile-pic uid="${c.recipient_id}" size="q" />
+            %if c.recipient_fb_uid:
+                To: <fb:profile-pic uid="${c.recipient_fb_uid}" size="q" />
             %endif
-            Gift info
         </div>
     </div>
     <div class="gift_store_row">
-        Your donation of $NN was processed through Amazon Payments.  Your gift was sent.
+        <%
+            method_desc = {'CC':'credit card payment', 'ACH':'bank transfer', 'ABT':'Amazon Payments balance transfer'}[c.payment_method]
+            status_desc = {'Success':'succeeded', 'Pending':'is pending', 'Failure':'did not succeed', 'Cancelled':'was cancelled'}[c.pay_status]
+        %>
+        Your donation of $${'%.2f' % c.donation.amount} to ${c.donation.charity.name} has been authorized through Amazon Payments.  Your ${method_desc} ${status_desc}.
     </div>
+    %if c.pay_status == 'Pending':
+    <div class="gift_store_row">
+        When the payment is confirmed, your gift to <fb:name uid="${c.recipient_fb_uid}" firstnameonly="true" reflexive="true" /> will be delivered to <fb:pronoun uid="${c.recipient_fb_uid}" possessive="true" /> profile box.
+    </div>
+    %endif
+    %if c.pay_status == 'Success':
+    <div class="gift_store_row">
+        Your gift to <fb:name uid="${c.recipient_fb_uid}" firstnameonly="true" reflexive="true" /> has been delivered to <fb:pronoun uid="${c.recipient_fb_uid}" possessive="true" /> profile box.
+    </div>
+    %endif
+    <div class="gift_store_row">
+        On behalf of <a href="${c.donation.charity.url}" title="Go to ${c.donation.charity.name}'s website">${c.donation.charity.name}</a>, thank you for your donation!
+    </div>
+%endif
 </div>
 
 <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>

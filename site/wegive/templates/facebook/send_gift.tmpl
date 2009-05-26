@@ -72,18 +72,7 @@ a.anchor_button
 }
 
 
-#gifts_grid
-{
-    height: 300px;
-    padding-left: 2px;
-}
-.gift_container
-{
-    float: left;
-    padding: 3px;
-    margin: 4px 0 0 4px;
-    background-color: #CCCCCC;
-}
+
 .gift
 {
     height: 64px;
@@ -96,16 +85,6 @@ a.anchor_button
     width: 64px;
     text-align: center;
 }
-#gifts_directory
-{
-    float: right;
-    width: 140px;
-    padding: 6px 9px 0;
-}
-#gifts_paginator
-{
-    padding: 4px 11px;
-}
 .fbbluebox
 {
     background-color: #eceff6;
@@ -114,20 +93,6 @@ a.anchor_button
     padding: 10px;
     font-size: 13px;
     font-weight: bold;
-}
-.privacy_control
-{
-    margin-bottom: 5px;
-}
-.privacy_control input
-{
-    float: left;
-    margin-left: 6px;
-}
-.privacy_text
-{
-    margin-left: 27px;
-    padding-top: 2px;
 }
 </style>
 
@@ -176,20 +141,6 @@ a.anchor_button
         Your donation of $${c.donation_amt} to ${c.charity_name} will be processed through Amazon Payments.
     </div>
     <div class="gift_store_row">
-        <%doc><form id="continue_to_amz" name="continue_to_amz" action="${c.fps_url}" method="post" onsubmit="blipForm(this);">
-##            <input type="hidden" name="donation_id" value="${c.donation_id}" />
-            <input type="hidden" name="awsSignature" value="${c.aws_sig}" />
-            <input type="hidden" name="callerKey" value="${c.aws_key}" />
-            <input type="hidden" name="callerReference" value="${c.fps_caller_ref}" />
-            <input type="hidden" name="paymentReason" value="${c.fps_pymt_reason}" />
-            <input type="hidden" name="transactionAmount" value="${c.fps_trans_amt}" />
-            <input type="hidden" name="pipelineName" value="${c.fps_pipeline_name}" />
-            <input type="hidden" name="returnURL" value="${c.fps_return_url}" />
-##            <input type="hidden" name="version" value="${c.fps_version}" />
-            <input type="submit" value="Continue with donation" class="inputsubmit" onclick="alert('foo');" />
-            <a href="index">Cancel</a>
-        </form>
-        <br></%doc>
         <a href="${c.direct_url}" class="inputbutton anchor_button">Continue with donation</a> <a href="index">Cancel</a>
 ##        <div id="testdiv">Test text</div>
     </div>

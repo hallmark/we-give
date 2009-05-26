@@ -272,6 +272,7 @@ a.gift:hover
 
 <form id="gift_form" name="gift_form" action="send_gift" method="post" onsubmit="return checkForm(this);">
 
+<input type="hidden" name="uuid" value="${c.uuid}" />
 <input type="hidden" name="gift_id" id="gift_id" value="" />
 
 <div class="page_row">
@@ -292,7 +293,7 @@ a.gift:hover
 
 <div class="page_row">
     <h3>Specify the amount:</h3>
-    $ <input id="gift_amount" type="text" name="amount" class="inputtext" value="1.00" /> USD
+    $ <input id="gift_amount" type="text" name="amount" class="inputtext" value="1.00" autocomplete="off" /> USD
 </div>
 
 <div class="page_row">

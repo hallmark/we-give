@@ -5,8 +5,7 @@
 ##############################################################################
 """The application's model objects"""
 import sqlalchemy as sa
-from sqlalchemy import orm, schema, Column, Sequence, ForeignKey
-from sqlalchemy import Integer, Float, String, Unicode, UnicodeText, DateTime, TIMESTAMP, Boolean
+from sqlalchemy import orm, schema, types, Column, Sequence, ForeignKey
 from sqlalchemy.databases.mysql import MSBigInteger
 import datetime
 
@@ -14,11 +13,6 @@ from wegive.model import meta
 
 def init_model(engine):
     """Call me before using any of the tables or classes in the model"""
-    ## Reflected tables must be defined and mapped here
-    #global reflected_table
-    #reflected_table = sa.Table("Reflected", meta.metadata, autoload=True,
-    #                           autoload_with=engine)
-    #orm.mapper(Reflected, reflected_table)
 
     sm = orm.sessionmaker(autoflush=True, autocommit=False, expire_on_commit=True, bind=engine)
 
@@ -29,17 +23,6 @@ def init_model(engine):
 def now():
     # TODO: is this UTC now?
     return datetime.datetime.now()
-
-## Non-reflected tables may be defined and mapped at module level
-#foo_table = sa.Table("Foo", meta.metadata,
-#    sa.Column("id", sa.types.Integer, primary_key=True),
-#    sa.Column("bar", sa.types.String(255), nullable=False),
-#    )
-#
-#class Foo(object):
-#    pass
-#
-#orm.mapper(Foo, foo_table)
 
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -58,13 +41,20 @@ class User(Base):
     __tablename__ = 'wg_user'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
-    id = Column(Integer, Sequence('user_id_seq', optional=True), primary_key=True)
-    email = Column(Unicode(255), nullable=False, unique=True)
-    password = Column(String(50), nullable=False)
-    first_name = Column(Unicode(64))
-    last_name = Column(Unicode(64))
-    address_id = Column(Integer, ForeignKey("wg_address.id"))
-    created = Column(TIMESTAMP(), default=now)  # TODO: is this UTC?????
+    id = Column(types.Integer, Sequence('user_id_seq', optional=True), primary_key=True)
+    email = Column(types.Unicode(255), unique=True)
+    password = Column(types.String(50))
+    first_name = Column(types.Unicode(64))
+    last_name = Column(types.Unicode(64))
+    address_id = Column(types.Integer, ForeignKey("wg_address.id"))
+    created = Column(types.TIMESTAMP(), default=now)  # TODO: is this UTC?????
+    
+    received_gifts = orm.relation("Donation", primaryjoin="(Donation.recipient_id==User.id) & (Donation.pending==False)",
+                                  order_by="desc(Donation.given_date)", backref="recipient")
+    sent_gifts = orm.relation("Donation", primaryjoin="(Donation.donor_id==User.id) & (Donation.pending==False)",
+                                  order_by="desc(Donation.given_date)", backref="donor")
+    address = orm.relation("Address", primaryjoin="User.address_id==Address.id", uselist=False)
+    personas = orm.relation("UserPersona", backref="user")
     
     # locale?
     # timezone?
@@ -74,9 +64,8 @@ class User(Base):
     # The user ID is a 64-bit int datatype. If you're storing it in a MySQL database, use the BIGINT unsigned datatype
     facebook_uid = Column(MSBigInteger(unsigned=True))
     
-    def __init__(self, email, password):
-        self.email = email
-        self.password = password
+    def __init__(self):
+        pass
     
     def __repr__(self):
         return "<User('%s')>" % (self.email)
@@ -90,22 +79,27 @@ class UserPersona(Base):
     __tablename__ = 'wg_userpersona'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
-    id = Column(Integer, Sequence('userpersona_id_seq', optional=True), primary_key=True)
+    id = Column(types.Integer, Sequence('userpersona_id_seq', optional=True), primary_key=True)
     
     # the base mapping info (userID, networkID, network-userID)
-    wg_user_id = Column(Integer, ForeignKey("wg_user.id"))
-    network_id = Column(Integer, ForeignKey("wg_network.id"))
-    network_user_id = Column(MSBigInteger(unsigned=True))
-    created = Column(TIMESTAMP(), default=now)
+    wg_user_id = Column(types.Integer, ForeignKey("wg_user.id"), nullable=False)
+    network_id = Column(types.Integer, ForeignKey("wg_network.id"), nullable=False)
+    network_user_id = Column(MSBigInteger(unsigned=True), nullable=False)
+    created = Column(types.TIMESTAMP(), default=now)
     # TODO: uniqueness constraint on [network_id, network_user_id]
     # TODO: uniqueness constraint on [wg_user_id, network_id]
     
     # whether the user has added/authorized the We Give app
-    added_wg = Column(Boolean, default=False)
+    is_app_user = Column(types.Boolean, default=False)
     
     # the proxied email address (Facebook)
-    proxied_email = Column(Unicode(255))
+    proxied_email = Column(types.Unicode(255))
     
+    def __init__(self, wg_user_id, network_id, network_user_id):
+        self.wg_user_id = wg_user_id
+        self.network_id = network_id
+        self.network_user_id = network_user_id
+
     def __repr__(self):
         return "<UserPersona(%d on network<%d>)>" % (self.wg_user_id, network_id)
 
@@ -116,9 +110,13 @@ class SocialNetwork(Base):
     __tablename__ = 'wg_network'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
-    id = Column(Integer, Sequence('network_id_seq', optional=True), primary_key=True)
-    name = Column(Unicode(255), nullable=False)
-    url = Column(Unicode(255))
+    id = Column(types.Integer, Sequence('network_id_seq', optional=True), primary_key=True)
+    name = Column(types.Unicode(255), nullable=False)
+    url = Column(types.Unicode(255), nullable=False)
+
+    def __init__(self, name, url):
+        self.name = name
+        self.url = url
     
     def __repr__(self):
         return "<SocialNetwork(%s)>" % (self.name)
@@ -130,12 +128,17 @@ class Charity(Base):
     __tablename__ = 'wg_charity'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
-    id = Column(Integer, Sequence('charity_id_seq', optional=True), primary_key=True)
-    name = Column(Unicode(255), nullable=False)
-    address_id = Column(Integer, ForeignKey("wg_address.id"))
-    url = Column(Unicode(255))
-    short_code = Column(String(10), nullable=False)
-    created = Column(TIMESTAMP(), default=now)
+    id = Column(types.Integer, Sequence('charity_id_seq', optional=True), primary_key=True)
+    name = Column(types.Unicode(255), nullable=False)
+    short_code = Column(types.String(10), nullable=False)
+    address_id = Column(types.Integer, ForeignKey("wg_address.id"))
+    url = Column(types.Unicode(255))
+    recipient_token_id = Column(types.String(128))
+    created = Column(types.TIMESTAMP(), default=now)
+    
+    address = orm.relation("Address", primaryjoin="Charity.address_id==Address.id", uselist=False)
+    programs = orm.relation("Program", order_by="Program.name", backref="charity")
+    donations = orm.relation("Donation", order_by="desc(Donation.given_date)", backref="charity")
     
     def __init__(self, name, short_code):
         self.name = name
@@ -151,12 +154,12 @@ class Program(Base):
     __tablename__ = 'wg_program'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
-    id = Column(Integer, Sequence('program_id_seq', optional=True), primary_key=True)
-    name = Column(Unicode(255), nullable=False)
-    description = Column(UnicodeText)
-    charity_id = Column(Integer, ForeignKey("wg_charity.id"))
-    url = Column(Unicode(255))
-    created = Column(TIMESTAMP(), default=now)
+    id = Column(types.Integer, Sequence('program_id_seq', optional=True), primary_key=True)
+    name = Column(types.Unicode(255), nullable=False)
+    description = Column(types.UnicodeText)
+    charity_id = Column(types.Integer, ForeignKey("wg_charity.id"))
+    url = Column(types.Unicode(255))
+    created = Column(types.TIMESTAMP(), default=now)
     
     def __init__(self, name, charity_id):
         self.name = name
@@ -174,26 +177,26 @@ class Address(Base):
     __tablename__ = 'wg_address'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
-    id = Column(Integer, Sequence('address_id_seq', optional=True), primary_key=True)
+    id = Column(types.Integer, Sequence('address_id_seq', optional=True), primary_key=True)
     # street address
-    thoroughfare = Column(Unicode(255))
-    address_line_2 = Column(Unicode(255))
-    address_line_3 = Column(Unicode(255))
+    thoroughfare = Column(types.Unicode(255))
+    address_line_2 = Column(types.Unicode(255))
+    address_line_3 = Column(types.Unicode(255))
     # e.g., company, university, big building, hospital
-    premises = Column(Unicode(255))
+    premises = Column(types.Unicode(255))
     # city, town
-    locality = Column(Unicode(255))
+    locality = Column(types.Unicode(255))
     # zip code
-    postal_code = Column(Unicode(64))
-    rural_delivery = Column(Unicode(255))
+    postal_code = Column(types.Unicode(64))
+    rural_delivery = Column(types.Unicode(255))
     # PO Box
-    postal_delivery_point = Column(Unicode(64))
+    postal_delivery_point = Column(types.Unicode(64))
     # state, province, prefecture (region for vCards)
-    administrative_area = Column(Unicode(255))
+    administrative_area = Column(types.Unicode(255))
     # county
-    sub_administrative_area = Column(Unicode(255))
+    sub_administrative_area = Column(types.Unicode(255))
     # ISO 3166-1: two letter country codes
-    country_name_code = Column(String(2))
+    country_name_code = Column(types.String(2))
     
     def __init__(self, street_address, city, state, zip_code, country):
         self.thoroughfare = street_address
@@ -214,19 +217,21 @@ class Gift(Base):
     __tablename__ = 'wg_gift'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
-    id = Column(Integer, Sequence('gift_id_seq', optional=True), primary_key=True)
-    artist_id = Column(Integer, ForeignKey("wg_user.id"))
-    image_id = Column(Integer, ForeignKey("wg_image.id"))
-    name = Column(Unicode(64), nullable=False)
-    description = Column(UnicodeText)
-    base_cost = Column(Float, default=1.0)
-    charity_id = Column(Integer, ForeignKey("wg_charity.id"))
-    program_id = Column(Integer, ForeignKey("wg_program.id"))
-    item_limit = Column(Integer)
-    for_sale = Column(Boolean, default=False)
-    created = Column(TIMESTAMP(), default=now)
+    id = Column(types.Integer, Sequence('gift_id_seq', optional=True), primary_key=True)
+    artist_id = Column(types.Integer, ForeignKey("wg_user.id"), nullable=False)
+    image_id = Column(types.Integer, ForeignKey("wg_image.id"))
+    name = Column(types.Unicode(64), nullable=False)
+    description = Column(types.UnicodeText)
+    base_cost = Column(types.Float, default=1.0)
+    charity_id = Column(types.Integer, ForeignKey("wg_charity.id"))
+    program_id = Column(types.Integer, ForeignKey("wg_program.id"))
+    item_limit = Column(types.Integer)
+    for_sale = Column(types.Boolean, default=False, nullable=False)
+    created = Column(types.TIMESTAMP(), default=now)
     # TODO is_program_fixed Boolean if this can only be given for a specific charity/program
     # TODO is_cost_fixed Boolean if this can only be given at a certain price point
+    
+    donations = orm.relation("Donation", order_by="desc(Donation.given_date)", backref="gift")
     
     def __init__(self, artist_id, name, for_sale=False):
         self.artist_id = artist_id
@@ -247,11 +252,11 @@ class Image(Base):
     __tablename__ = 'wg_image'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
-    id = Column(Integer, Sequence('image_id_seq', optional=True), primary_key=True)
+    id = Column(types.Integer, Sequence('image_id_seq', optional=True), primary_key=True)
     # e.g. PSD file, Illustrator, etc
-    #origin_file = Column(String(255))
-    #thumbnail = Column(String(255))
-    #origin_file_type = Column(String(32))
+    #origin_file = Column(types.String(255))
+    #thumbnail = Column(types.String(255))
+    #origin_file_type = Column(types.String(32))
     
     def __init__(self):
         pass
@@ -266,18 +271,20 @@ class Donation(Base):
     __tablename__ = 'wg_donation'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
-    id = Column(Integer, Sequence('donation_id_seq', optional=True), primary_key=True)
-    donor_id = Column(Integer, ForeignKey("wg_user.id"))
-    recipient_id = Column(Integer, ForeignKey("wg_user.id"))
-    amount = Column(Float)
-    gift_id = Column(Integer, ForeignKey("wg_gift.id"), nullable=False)
-    charity_id = Column(Integer, ForeignKey("wg_charity.id"), nullable=False)
-    message = Column(UnicodeText)
-    pending = Column(Boolean, default=True)
-    transaction_id = Column(Integer, ForeignKey("wg_transaction.id"))
-    given_date = Column(DateTime, default=now)
-    # earmark = Column(Integer, ForeignKey("program.id"))  # TODO: call these designations instead?
-    # tracking_code = Column(String(64))
+    id = Column(types.Integer, Sequence('donation_id_seq', optional=True), primary_key=True)
+    donor_id = Column(types.Integer, ForeignKey("wg_user.id"), nullable=False)
+    recipient_id = Column(types.Integer, ForeignKey("wg_user.id"), nullable=False)
+    amount = Column(types.Float, nullable=False)
+    gift_id = Column(types.Integer, ForeignKey("wg_gift.id"), nullable=False)
+    charity_id = Column(types.Integer, ForeignKey("wg_charity.id"), nullable=False)
+    message = Column(types.UnicodeText)
+    pending = Column(types.Boolean, default=True)
+    #transaction_id = Column(types.Integer, ForeignKey("wg_transaction.id"))
+    given_date = Column(types.DateTime, default=now)
+    # designation = Column(types.Integer, ForeignKey("program.id"))  # i.e. earmark
+    # tracking_code = Column(types.String(64))
+    
+    transaction = orm.relation("Transaction", uselist=False, backref='donation')
     
     def __init__(self, donor_id, recipient_id, amount, gift_id, charity_id):
         self.donor_id = donor_id
@@ -297,16 +304,30 @@ class Transaction(Base):
     __tablename__ = 'wg_transaction'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
-    id = Column(Integer, Sequence('transaction_id_seq', optional=True), primary_key=True)
-    date = Column(TIMESTAMP(), default=now)
-    amount = Column(Float)
+    id = Column(types.Integer, Sequence('transaction_id_seq', optional=True), primary_key=True)
+    fps_action = Column(types.String(64), nullable=False)
+    donation_id = Column(types.Integer, ForeignKey("wg_donation.id"), nullable=False)
+    caller_reference = Column(types.String(128), nullable=False)
+    fps_transaction_id = Column(types.String(40))
+    fps_transaction_status = Column(types.String(16))
+    amount = Column(types.Float)
+    recipient_token_id = Column(types.String(128))              # token representing charity
+    sender_token_id = Column(types.String(128))                 # token representing donor
+    payment_method = Column(types.String(3))                    # CC, ACH, or ABT
+    fps_fees = Column(types.Float)                              # amount of fees collected by Amazon FPS for performing the transaction
+    created = Column(types.TIMESTAMP(), default=now)
+    authorized_date = Column(types.TIMESTAMP())
+    last_attempt_date = Column(types.TIMESTAMP())  # last time Pay operation was attempted
+    success_date = Column(types.TIMESTAMP())
     # additional details from Amazon FPS
     
-    def __init__(self):
-        pass
+    def __init__(self, fps_action, donation_id, caller_reference):
+        self.fps_action = fps_action
+        self.donation_id = donation_id
+        self.caller_reference = caller_reference
     
     def __repr__(self):
-        return "<Transaction()>"
+        return "<Transaction(donation<%d>, callerRef<%s>)>" % (self.donation_id, self.caller_reference)
 
 
 ## Classes for reflected tables may be defined here, but the table and
