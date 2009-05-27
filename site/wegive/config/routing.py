@@ -32,6 +32,7 @@ def make_map():
     map.connect('/app/{action}', controller='facebookapp', conditions={'sub_domain':[fbsubdomain]})
     map.connect('/{action}', controller='facebookcanvas', conditions={'sub_domain':[fbsubdomain]})
     map.connect('/', controller='facebookcanvas', action='index', conditions={'sub_domain':[fbsubdomain]})
+    map.connect('/fps/ipn', controller='ipn', action='process_ipn')
     map.connect('/{action}', controller='hub_site')
     map.connect('/', controller='hub_site', action='index')
     map.connect('/admin/{action}', controller='admin')

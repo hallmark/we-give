@@ -27,6 +27,7 @@ import wegive.lib.helpers as h
 import wegive.model as model
 import wegive.model.meta as meta
 from wegive.model import Charity, Donation, Gift, User, UserPersona, SocialNetwork, Transaction
+import wegive.logic.facebook_platform as fb_logic
 
 AWS_KEY_ID = config['AWS_KEY_ID']
 AWS_SECRET_KEY = config['AWS_SECRET_KEY']
@@ -109,7 +110,7 @@ class FacebookcanvasController(BaseController):
                 if DISABLE_FBML_UPDATE:
                     log.debug("Updating profile FBML on canvas-page views is currently de-fanged, so that I can properly test handling users w/o FBML!")
                 else:
-                    self._update_user_fbml_by_fb_user(fb_user)
+                    fb_logic.update_user_fbml_by_userpersona(fb_user)
             
             session.commit()
         
@@ -166,44 +167,6 @@ class FacebookcanvasController(BaseController):
                 log.debug('Unexpected error code for getFBML: ' + str(err))
             return False
         return True
-
-    def _update_user_fbml_by_wg_userid(self, user_id):
-        network = meta.Session.query(SocialNetwork).filter_by(name=u'Facebook').one()
-        userpersona_q = meta.Session.query(UserPersona)
-        fb_user = userpersona_q.filter_by(network_id=network.id).filter_by(wg_user_id=user_id).first()
-        if fb_user:
-            self._update_user_fbml_by_fb_user(fb_user)
-        else:
-            log.error('_update_user_fbml_by_wg_userid: cannot find Facebook UserPersona for user_id %d' % user_id)
-        
-    def _update_user_fbml_by_fb_user(self, fb_user):
-        fb_uid = fb_user.network_user_id
-        wg_user = fb_user.user
-        
-        received_gifts = wg_user.received_gifts
-        gift_count = len(received_gifts)
-        if gift_count == 0:
-            skinny_content = '<style>.no_items{text-align:center; margin:10px auto;}</style><fb:subtitle>&nbsp;<fb:action href="http://apps.facebook.com/test-we-give/">Give to a Friend</fb:action></fb:subtitle><div class="no_items">No gifts yet.</div>'
-            boxes_content = skinny_content
-        else:
-            top_gifts = received_gifts[:4]
-            
-            subtitle_fbml = '<style>.gift_box{width: 90px; margin:10px 5px;}</style><fb:subtitle><a href="http://apps.facebook.com/test-we-give/allgifts?uid=%d">%s</a><fb:action href="http://apps.facebook.com/test-we-give/">Give to a Friend</fb:action></fb:subtitle>' % (fb_uid, h.plural(gift_count, 'gift', 'gifts'))
-            
-            gifts_buf = []
-            for gift in top_gifts:
-                gifts_buf.append('<div class="gift_box"><img src="http://images.wegivetofriends.org/dev/scratch/orb.png"></div>')
-            gifts_fbml = ''.join(gifts_buf)
-            
-            skinny_content = subtitle_fbml + gifts_fbml
-            boxes_content = subtitle_fbml + gifts_fbml
-            #boxes_content = '<fb:wide>Wide content</fb:wide><fb:narrow>Narrow content</fb:narrow><br>Common content here.'
-        
-        try:
-            set_fbml_res = facebook.api_client.profile.setFBML(uid=fb_uid, profile_main=skinny_content, profile=boxes_content)
-            log.debug('setFBML response: ' + repr(set_fbml_res))
-        except FacebookError, err:
-            log.debug('Unexpected error calling facebook.setFBML: ' + str(err))
 
     def send_gift(self):
         """Render gift preview for user to review and then click 'Continue with donation'"""
@@ -368,7 +331,7 @@ class FacebookcanvasController(BaseController):
         if transaction.fps_transaction_status == 'Success':
             donation.pending = False
             session.flush()
-            self._update_user_fbml_by_wg_userid(donation.recipient_id)
+            fb_logic.update_user_fbml_by_wg_userid(donation.recipient_id)
         
         session.commit()
         

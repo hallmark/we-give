@@ -150,10 +150,16 @@ a.gift:hover
 <div id="gift_store">
     <div id="gifts_display">
         <div id="gifts_grid">
-    % for gift in c.gifts:
+    % for (offset, gift) in enumerate(c.gifts):
+        <%
+            if (offset % 2) == 0:
+                img_name = 'orb'
+            else:
+                img_name = 'clover'
+        %>
             <div class="gift_container">
-                <a href="#" onclick="selectGift(${gift.id}, '${gift.name}', 'http://images.wegivetofriends.org/dev/scratch/orb.png'); return false;" title="${gift.name}" class="gift">
-                    <img src="http://images.wegivetofriends.org/dev/scratch/orb.png" alt="${gift.name}">
+                <a href="#" onclick="selectGift(${gift.id}, '${gift.name}', 'http://images.wegivetofriends.org/dev/scratch/${img_name}.png'); return false;" title="${gift.name}" class="gift">
+                    <img src="http://images.wegivetofriends.org/dev/scratch/${img_name}.png" alt="${gift.name}">
                 </a>
                 <div class="gift_caption">
                     $1
