@@ -47,7 +47,7 @@ class User(Base):
     first_name = Column(types.Unicode(64))
     last_name = Column(types.Unicode(64))
     address_id = Column(types.Integer, ForeignKey("wg_address.id"))
-    created = Column(types.TIMESTAMP(), default=now)  # TODO: is this UTC?????
+    created = Column(types.DateTime(), default=now)
     
     received_gifts = orm.relation("Donation", primaryjoin="(Donation.recipient_id==User.id) & (Donation.pending==False)",
                                   order_by="desc(Donation.given_date)", backref="recipient")
@@ -58,11 +58,6 @@ class User(Base):
     
     # locale?
     # timezone?
-    
-    # TODO: this is temporary.  Should be moved to a UserMapping or UserPersona table
-    # NOTE: Facebook User IDs:
-    # The user ID is a 64-bit int datatype. If you're storing it in a MySQL database, use the BIGINT unsigned datatype
-    facebook_uid = Column(MSBigInteger(unsigned=True))
     
     def __init__(self):
         pass
@@ -84,8 +79,10 @@ class UserPersona(Base):
     # the base mapping info (userID, networkID, network-userID)
     wg_user_id = Column(types.Integer, ForeignKey("wg_user.id"), nullable=False)
     network_id = Column(types.Integer, ForeignKey("wg_network.id"), nullable=False)
+    # NOTE: Facebook User IDs:
+    # The user ID is a 64-bit int datatype. If you're storing it in a MySQL database, use the BIGINT unsigned datatype
     network_user_id = Column(MSBigInteger(unsigned=True), nullable=False)
-    created = Column(types.TIMESTAMP(), default=now)
+    created = Column(types.DateTime(), default=now)
     # TODO: uniqueness constraint on [network_id, network_user_id]
     # TODO: uniqueness constraint on [wg_user_id, network_id]
     
@@ -134,7 +131,7 @@ class Charity(Base):
     address_id = Column(types.Integer, ForeignKey("wg_address.id"))
     url = Column(types.Unicode(255))
     recipient_token_id = Column(types.String(128))
-    created = Column(types.TIMESTAMP(), default=now)
+    created = Column(types.DateTime(), default=now)
     
     address = orm.relation("Address", primaryjoin="Charity.address_id==Address.id", uselist=False)
     programs = orm.relation("Program", order_by="Program.name", backref="charity")
@@ -159,7 +156,7 @@ class Program(Base):
     description = Column(types.UnicodeText)
     charity_id = Column(types.Integer, ForeignKey("wg_charity.id"))
     url = Column(types.Unicode(255))
-    created = Column(types.TIMESTAMP(), default=now)
+    created = Column(types.DateTime(), default=now)
     
     def __init__(self, name, charity_id):
         self.name = name
@@ -227,7 +224,7 @@ class Gift(Base):
     program_id = Column(types.Integer, ForeignKey("wg_program.id"))
     item_limit = Column(types.Integer)
     for_sale = Column(types.Boolean, default=False, nullable=False)
-    created = Column(types.TIMESTAMP(), default=now)
+    created = Column(types.DateTime(), default=now)
     # TODO is_program_fixed Boolean if this can only be given for a specific charity/program
     # TODO is_cost_fixed Boolean if this can only be given at a certain price point
     
@@ -315,10 +312,9 @@ class Transaction(Base):
     sender_token_id = Column(types.String(128))                 # token representing donor
     payment_method = Column(types.String(3))                    # CC, ACH, or ABT
     fps_fees = Column(types.Float)                              # amount of fees collected by Amazon FPS for performing the transaction
-    created = Column(types.TIMESTAMP(), default=now)
-    authorized_date = Column(types.TIMESTAMP())
-    last_attempt_date = Column(types.TIMESTAMP())  # last time Pay operation was attempted
-    success_date = Column(types.TIMESTAMP())
+    created = Column(types.DateTime(), default=now)
+    last_attempt_date = Column(types.DateTime())  # last time Pay operation was attempted
+    success_date = Column(types.DateTime())
     # additional details from Amazon FPS
     
     def __init__(self, fps_action, donation_id, caller_reference):
