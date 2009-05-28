@@ -16,7 +16,7 @@ from wegive.lib.base import BaseController, render
 
 import wegive.model as model
 import wegive.model.meta as meta
-from wegive.model import Charity, Donation, Gift, User, UserPersona, SocialNetwork, Transaction
+from wegive.model import Transaction
 import wegive.logic.facebook_platform as fb_logic
 
 log = logging.getLogger(__name__)
@@ -41,9 +41,6 @@ class IpnController(BaseController):
     def __init__(self):
         self.fps_client = app_globals.fps_client
 
-    def stupid(self):
-        fb_logic.update_user_fbml_by_wg_userid(1)
-        
     def process_ipn(self):
         log_ipn_notification(request)
         
