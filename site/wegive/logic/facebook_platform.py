@@ -18,6 +18,18 @@ from wegive.model import Charity, Donation, Gift, User, UserPersona, SocialNetwo
 
 log = logging.getLogger(__name__)
 
+def has_profile_fbml(fb_uid):
+    """Check if a Facebook user already has FBML for the profile boxes"""
+    # TODO: retry, e.g., for URLError: <urlopen error (54, 'Connection reset by peer')>
+    try:
+        fbml = fb.api_client.profile.getFBML(fb_uid, type=2)  # types: 1 = original style, 2 = profile_main
+        #log.debug('getFBML response: ' + fbml)
+    except FacebookError, err:
+        if int(err.code) != 1:
+            log.debug('Unexpected error code for getFBML: ' + str(err))
+        return False
+    return True
+
 def update_user_fbml_by_userpersona(userpersona):
     facebook_uid = userpersona.network_user_id
     wg_user = userpersona.user

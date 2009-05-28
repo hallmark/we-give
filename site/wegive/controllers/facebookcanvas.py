@@ -105,12 +105,12 @@ class FacebookcanvasController(BaseController):
 
             session.flush()
             
-            if fb_user.is_app_user and not self._has_profile_fbml(current_user):
-                DISABLE_FBML_UPDATE = False
-                if DISABLE_FBML_UPDATE:
-                    log.debug("Updating profile FBML on canvas-page views is currently de-fanged, so that I can properly test handling users w/o FBML!")
-                else:
+            if fb_user.is_app_user and not fb_logic.has_profile_fbml(current_user):
+                ALLOW_FBML_INIT_ON_FIRST_VISIT = True
+                if ALLOW_FBML_INIT_ON_FIRST_VISIT:
                     fb_logic.update_user_fbml_by_userpersona(fb_user)
+                else:
+                    log.debug("Updating profile FBML on canvas-page views is currently de-fanged, so that I can properly test handling users w/o FBML!")
             
             session.commit()
         
@@ -156,17 +156,6 @@ class FacebookcanvasController(BaseController):
             return up.network_user_id
         else:
             return None
-
-    def _has_profile_fbml(self, fb_uid):
-        """Check if a Facebook user already has FBML for the profile boxes"""
-        try:
-            fbml = facebook.api_client.profile.getFBML(fb_uid, type=2)  # types: 1 = original style, 2 = profile_main
-            #log.debug('getFBML response: ' + fbml)
-        except FacebookError, err:
-            if int(err.code) != 1:
-                log.debug('Unexpected error code for getFBML: ' + str(err))
-            return False
-        return True
 
     def send_gift(self):
         """Render gift preview for user to review and then click 'Continue with donation'"""
