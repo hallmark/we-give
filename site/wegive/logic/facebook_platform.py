@@ -61,12 +61,15 @@ def _update_user_fbml(facebook_uid, wg_user):
         
         gifts_buf = []
         for gift in top_gifts:
-            gifts_buf.append('<div class="gift_box"><img src="http://images.wegivetofriends.org/dev/scratch/orb.png"></div>')
+            gifts_buf.append('<div class="gift_box"><img src="')
+            gifts_buf.append(h.gift_image_url(gift.gift_id))
+            gifts_buf.append('"></div>')
         gifts_fbml = ''.join(gifts_buf)
         
         skinny_content = subtitle_fbml + gifts_fbml
         boxes_content = subtitle_fbml + gifts_fbml
         #boxes_content = '<fb:wide>Wide content</fb:wide><fb:narrow>Narrow content</fb:narrow><br>Common content here.'
+        #log.debug(boxes_content)
     
     try:
         set_fbml_res = fb.api_client.profile.setFBML(uid=facebook_uid, profile_main=skinny_content, profile=boxes_content)

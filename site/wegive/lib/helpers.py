@@ -14,3 +14,10 @@ available to Controllers. This module is available to both as 'h'.
 from webhelpers.html import literal
 from webhelpers.html.converters import format_paragraphs, nl2br
 from webhelpers.text import plural
+from routes import url_for
+
+def gift_image_url(gift_id):
+    from pylons import config
+    gift_url_pattern = config['gift_url_pattern']
+    return gift_url_pattern % gift_id
+    

@@ -117,7 +117,7 @@ class FacebookcanvasController(BaseController):
         # query DB for list of gifts
         gift_q = meta.Session.query(Gift)
         charity_q = meta.Session.query(Charity)
-        c.gifts = gift_q.filter_by(for_sale=True).order_by(Gift.created)[:24]
+        c.gifts = gift_q.filter_by(for_sale=True).order_by(Gift.created)[:15]
         
         # TODO: filter(Charity.recipient_token_id != None)
         c.charities = charity_q.order_by(Charity.created)

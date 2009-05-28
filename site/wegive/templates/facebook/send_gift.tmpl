@@ -127,7 +127,7 @@ a.anchor_button
                 <div class="gift_content">
                     To: <span class="recipient_name"><fb:name uid="${c.recipient_id}" linked="false" /></span>
                     <div class="gift_and_message">
-                        <div class="gift_image"><img src="http://images.wegivetofriends.org/dev/scratch/orb.png" alt="${c.gift.name}"></div>
+                        <div class="gift_image"><img src="${h.gift_image_url(c.gift.id)}" alt="${c.gift.name}"></div>
                         <div class="gift_message">
                             ${h.literal(h.nl2br(c.message))}
                         </div>
