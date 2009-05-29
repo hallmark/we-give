@@ -131,6 +131,10 @@ class FacebookcanvasController(BaseController):
         #    do something on item and offset
         # or: list comprehension: [c * i for (i, c) in enumerate(c.gifts)]
         
+        
+        # TODO: template should know if user has added app - don't render 'Received' / 'Sent' tabs for non-app users
+        
+        
         return render('/facebook/index.tmpl')
 
     def _get_fb_userpersona(self, session, fb_uid, create_if_missing=False):
@@ -339,6 +343,42 @@ class FacebookcanvasController(BaseController):
         c.sent_gifts = {}
         
         return render('/facebook/sent.tmpl')
+
+    def gift(self):
+        """Display one gift donation."""
+        log_fb_request(request)
+        facebook.process_request()
+        """
+        current_user = None
+        if facebook.user:
+            log.debug('user: %s' % facebook.user)
+            current_user = facebook.user
+        elif facebook.canvas_user:
+            log.debug('canvas_user: %s' % facebook.canvas_user)
+            current_user = facebook.canvas_user
+        
+        if not facebook.api_client.added:
+            c.error_msg = 'You need to add this app before you can send gifts.'
+            return render('/facebook/send_gift.tmpl')
+        
+        current_user = facebook.user
+        if not current_user:
+            c.error_msg = 'Error getting your user info.'
+            return render('/facebook/send_gift.tmpl')
+        """
+        try:
+            gift_id = int(request.params.get('id'))
+            
+            # get the gift donation info
+            c.donation = meta.Session.query(Donation).get(gift_id)
+            session = meta.Session()
+            c.recipient_id = self._get_network_uid(session, c.donation.recipient_id)
+            c.donor_id = self._get_network_uid(session, c.donation.donor_id)
+        except Exception, err:
+            log.debug(str(err))
+            c.error_msg = 'Unable to find that gift.'
+        
+        return render('/facebook/gift.tmpl')
 
     def mission(self):
         

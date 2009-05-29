@@ -39,7 +39,7 @@ class User(Base):
     A user of We Give, void of details specific to any social network.
     """
     __tablename__ = 'wg_user'
-    __table_args__ = {'mysql_engine':'InnoDB'}
+    __table_args__ = {'mysql_charset': 'utf8', 'mysql_engine':'InnoDB'}
     
     id = Column(types.Integer, Sequence('user_id_seq', optional=True), primary_key=True)
     email = Column(types.Unicode(255), unique=True)
@@ -72,7 +72,7 @@ class UserPersona(Base):
     Needs to handle a super-set of all info to store from the various networks.
     """
     __tablename__ = 'wg_userpersona'
-    __table_args__ = {'mysql_engine':'InnoDB'}
+    __table_args__ = {'mysql_charset': 'utf8', 'mysql_engine':'InnoDB'}
     
     id = Column(types.Integer, Sequence('userpersona_id_seq', optional=True), primary_key=True)
     
@@ -105,7 +105,7 @@ class SocialNetwork(Base):
     A network with which We Give has integrated, such as Facebook, MySpace, LinkedIn, or Bebo.
     """
     __tablename__ = 'wg_network'
-    __table_args__ = {'mysql_engine':'InnoDB'}
+    __table_args__ = {'mysql_charset': 'utf8', 'mysql_engine':'InnoDB'}
     
     id = Column(types.Integer, Sequence('network_id_seq', optional=True), primary_key=True)
     name = Column(types.Unicode(255), nullable=False)
@@ -123,7 +123,7 @@ class Charity(Base):
     A charity, such as ACWP or Seva.
     """
     __tablename__ = 'wg_charity'
-    __table_args__ = {'mysql_engine':'InnoDB'}
+    __table_args__ = {'mysql_charset': 'utf8', 'mysql_engine':'InnoDB'}
     
     id = Column(types.Integer, Sequence('charity_id_seq', optional=True), primary_key=True)
     name = Column(types.Unicode(255), nullable=False)
@@ -149,7 +149,7 @@ class Program(Base):
     A charity program, such as the education program with ACWP, or the vaccination program.
     """
     __tablename__ = 'wg_program'
-    __table_args__ = {'mysql_engine':'InnoDB'}
+    __table_args__ = {'mysql_charset': 'utf8', 'mysql_engine':'InnoDB'}
     
     id = Column(types.Integer, Sequence('program_id_seq', optional=True), primary_key=True)
     name = Column(types.Unicode(255), nullable=False)
@@ -172,7 +172,7 @@ class Address(Base):
        http://docs.oasis-open.org/ciq/v3.0/prd02/specs/ciq-specs-v3-prd2.html#_Toc170648866
     """
     __tablename__ = 'wg_address'
-    __table_args__ = {'mysql_engine':'InnoDB'}
+    __table_args__ = {'mysql_charset': 'utf8', 'mysql_engine':'InnoDB'}
     
     id = Column(types.Integer, Sequence('address_id_seq', optional=True), primary_key=True)
     # street address
@@ -212,7 +212,7 @@ class Gift(Base):
     A gift that appears in the gift shop.
     """
     __tablename__ = 'wg_gift'
-    __table_args__ = {'mysql_engine':'InnoDB'}
+    __table_args__ = {'mysql_charset': 'utf8', 'mysql_engine':'InnoDB'}
     
     id = Column(types.Integer, Sequence('gift_id_seq', optional=True), primary_key=True)
     artist_id = Column(types.Integer, ForeignKey("wg_user.id"), nullable=False)
@@ -247,7 +247,7 @@ class Image(Base):
     Unpublished gift images and original assets are located at assets.wegivetofriends.org.
     """
     __tablename__ = 'wg_image'
-    __table_args__ = {'mysql_engine':'InnoDB'}
+    __table_args__ = {'mysql_charset': 'utf8', 'mysql_engine':'InnoDB'}
     
     id = Column(types.Integer, Sequence('image_id_seq', optional=True), primary_key=True)
     # e.g. PSD file, Illustrator, etc
@@ -266,7 +266,7 @@ class Donation(Base):
     A donation to a charity, which is also a gift sent from one user to another.
     """
     __tablename__ = 'wg_donation'
-    __table_args__ = {'mysql_engine':'InnoDB'}
+    __table_args__ = {'mysql_charset': 'utf8', 'mysql_engine':'InnoDB'}
     
     id = Column(types.Integer, Sequence('donation_id_seq', optional=True), primary_key=True)
     donor_id = Column(types.Integer, ForeignKey("wg_user.id"), nullable=False)
@@ -275,6 +275,7 @@ class Donation(Base):
     gift_id = Column(types.Integer, ForeignKey("wg_gift.id"), nullable=False)
     charity_id = Column(types.Integer, ForeignKey("wg_charity.id"), nullable=False)
     message = Column(types.UnicodeText)
+    privacy = Column(types.CHAR(1))
     pending = Column(types.Boolean, default=True)
     #transaction_id = Column(types.Integer, ForeignKey("wg_transaction.id"))
     given_date = Column(types.DateTime, default=now)
@@ -299,7 +300,7 @@ class Transaction(Base):
     An Amazon Flexible Payments System (FPS) transaction.
     """
     __tablename__ = 'wg_transaction'
-    __table_args__ = {'mysql_engine':'InnoDB'}
+    __table_args__ = {'mysql_charset': 'utf8', 'mysql_engine':'InnoDB'}
     
     id = Column(types.Integer, Sequence('transaction_id_seq', optional=True), primary_key=True)
     fps_action = Column(types.String(64), nullable=False)

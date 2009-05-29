@@ -8,6 +8,7 @@
 Consists of logic that handles interaction with the Facebook Platform.
 """
 import logging
+from pylons import config
 
 from facebook.wsgi import facebook as fb
 from facebook import FacebookError
@@ -15,6 +16,8 @@ from facebook import FacebookError
 import wegive.lib.helpers as h
 import wegive.model.meta as meta
 from wegive.model import Charity, Donation, Gift, User, UserPersona, SocialNetwork, Transaction
+
+CANVAS_URL = config['fbapp_canvas_url']
 
 log = logging.getLogger(__name__)
 
@@ -52,18 +55,18 @@ def _update_user_fbml(facebook_uid, wg_user):
     gift_count = len(received_gifts)
     
     if gift_count == 0:
-        skinny_content = '<style>.no_items{text-align:center; margin:10px auto;}</style><fb:subtitle>&nbsp;<fb:action href="http://apps.facebook.com/test-we-give/">Give to a Friend</fb:action></fb:subtitle><div class="no_items">No gifts yet.</div>'
+        skinny_content = '<style>.no_items{text-align:center; margin:10px auto;}</style><fb:subtitle>&nbsp;<fb:action href="%s/">Give to a Friend</fb:action></fb:subtitle><div class="no_items">No gifts yet.</div>' % CANVAS_URL
         boxes_content = skinny_content
     else:
         top_gifts = received_gifts[:4]
         
-        subtitle_fbml = '<style>.gift_box{width: 90px; margin:10px 5px;}</style><fb:subtitle><a href="http://apps.facebook.com/test-we-give/allgifts?uid=%d">%s</a><fb:action href="http://apps.facebook.com/test-we-give/">Give to a Friend</fb:action></fb:subtitle>' % (facebook_uid, h.plural(gift_count, 'gift', 'gifts'))
+        subtitle_fbml = '<style>.gift_box{width: 90px; margin:10px 5px;}</style><fb:subtitle><a href="%s/allgifts?uid=%d">%s</a><fb:action href="%s/">Give to a Friend</fb:action></fb:subtitle>' % (CANVAS_URL, facebook_uid, h.plural(gift_count, 'gift', 'gifts'), CANVAS_URL)
         
         gifts_buf = []
-        for gift in top_gifts:
-            gifts_buf.append('<div class="gift_box"><img src="')
-            gifts_buf.append(h.gift_image_url(gift.gift_id))
-            gifts_buf.append('"></div>')
+        for donation in top_gifts:
+            gifts_buf.append('<div class="gift_box"><a href="%s/gift?id=%d" title="%s"><img src="' % (CANVAS_URL, donation.id, donation.gift.name))
+            gifts_buf.append(h.gift_image_url(donation.gift_id))
+            gifts_buf.append('"></a></div>')
         gifts_fbml = ''.join(gifts_buf)
         
         skinny_content = subtitle_fbml + gifts_fbml
