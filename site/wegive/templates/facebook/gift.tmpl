@@ -52,7 +52,17 @@
     margin-left: 100px;
     border: 1px solid #e7e7e7;
 }
-
+.benefitting
+{
+    width: 100%;
+    text-align: right;
+    font-style: italic;
+    margin-top: 3px;
+}
+.benefitting
+{
+    color: #888888;
+}
 </style>
 
 <fb:title>View Gift</fb:title>
@@ -96,6 +106,9 @@
                             ${h.literal(h.nl2br(c.donation.message))}
                         </div>
                         <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
+                        <div class="benefitting">
+                            benefitting <a href="${c.donation.charity.url}" title="Go to ${c.donation.charity.name}'s website" target="_blank">${c.donation.charity.name}</a>
+                        </div>
                     </div>
                 </div>
             %endif
