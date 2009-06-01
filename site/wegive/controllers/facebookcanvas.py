@@ -119,8 +119,8 @@ class FacebookcanvasController(BaseController):
         charity_q = meta.Session.query(Charity)
         c.gifts = gift_q.filter_by(for_sale=True).order_by(Gift.created)[:15]
         
-        # TODO: filter(Charity.recipient_token_id != None)
-        c.charities = charity_q.order_by(Charity.created)
+        # get list of charities that have registered thru CBUI as payment recipients
+        c.charities = charity_q.filter(Charity.recipient_token_id != None).order_by(Charity.created)
         
         c.form_uuid = uuid.uuid1().hex
         

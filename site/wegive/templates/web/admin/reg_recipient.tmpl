@@ -1,0 +1,45 @@
+## -*- coding: utf-8 -*-
+##
+## All portions of the code written by Mark Ture are Copyright (c) 2009
+## Mark Ture. All rights reserved.
+##############################################################################
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+   "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" >
+    <title>Register a Payment Recipient - Step 1 - We Give Admin</title>
+</head>
+<body>
+    <style>
+        body
+        {
+            background-color: #FF99FF;
+        }
+        .content
+        {
+            font-family: Arial;
+            font-size: 93%;
+            width: 600px;
+            margin: 200px auto 0;
+            background-color: #FFFCE4;
+            border: 2px solid #FF0099;
+            padding: 30px 30px 150px;
+        }
+    </style>
+    <div class="content">
+        <h2>Register a Charity to Receive Payments - Step 1</h2>
+    
+        <form name="select_charity" action="reg_recipient_2" method="POST">
+        <p>
+            <h3>Select the charity:</h3>
+            <select name="charity_val" id="gift_charity">
+        % for charity in c.charities:
+                <option value="${charity.id}">${charity.name}</option>
+        % endfor
+            </select>
+            <input type="submit" value="Continue" />
+        </p>
+        </form>
+    </div>
+</body>

@@ -21,4 +21,6 @@ class Globals(object):
 
         """
         self.fps_client = fpys.FlexiblePaymentClient(config['AWS_KEY_ID'],
-                                                     config['AWS_SECRET_KEY'])
+                                                     config['AWS_SECRET_KEY'],
+                                                     fps_url=config['fps_api_url'],
+                                                     pipeline_url=config['fps_cbui_url'])

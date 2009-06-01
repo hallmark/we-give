@@ -1,0 +1,61 @@
+## -*- coding: utf-8 -*-
+##
+## All portions of the code written by Mark Ture are Copyright (c) 2009
+## Mark Ture. All rights reserved.
+##############################################################################
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+   "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" >
+    <title>Register a Payment Recipient - Step 2 - We Give Admin</title>
+</head>
+<body>
+    <style>
+        body
+        {
+            background-color: #FF99FF;
+        }
+        .content
+        {
+            font-family: Arial;
+            font-size: 93%;
+            width: 600px;
+            margin: 200px auto 0;
+            background-color: #FFFCE4;
+            border: 2px solid #FF0099;
+            padding: 30px 30px 120px;
+        }
+        .submit-link
+        {
+            display: inline-block;
+            border: 1px solid;
+            border-color: #DDDDDD #AAAAAA #AAAAAA #DDDDDD;
+            padding: 6px 9px 4px;
+            background: white url(../nav-bg.gif) repeat-x scroll center bottom;
+        }
+        .submit-link,
+        .submit-link:link,
+        .submit-link:hover,
+        .submit-link:visited
+        {
+            text-decoration: none;
+            color: black;
+            font-size: 12px;
+            font-weight: normal;
+        }
+    </style>
+    <div class="content">
+        <h2>Register a Charity to Receive Payments - Step 2</h2>
+    
+        <p>
+            Click below to register your charity &ndash; ${c.charity.name} &ndash; to receive donation payments through We Give.
+        </p>
+        <p>
+            You will need an Amazon Payments Business Account to register.
+        </p>
+        <p style="text-align: center; margin-top: 30px;">
+            <a href="${c.fps_cbui_url}" class="submit-link">Register</a>
+        </p>
+    </div>
+</body>
