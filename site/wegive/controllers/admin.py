@@ -84,7 +84,7 @@ class AdminController(BaseController):
                       'maxFixedFee': 0,
                       'maxVariableFee' : 0,
                       'paymentMethod' : 'CC,ACH,ABT',
-                      'recipientPaysFee': 'True',
+                      'recipientPaysFee': 'False',
                       'callerKey': AWS_KEY_ID,
                       'pipelineName': 'Recipient',
                       'websiteDescription': 'We Give Foundation',

@@ -221,6 +221,7 @@ class FacebookcanvasController(BaseController):
         # TODO: commit, then redirect to review_gift page with donation ID??
         
         # compute parameters for request to Co-Branded FPS pages
+        """
         parameters = {'callerReference': 'wgdonation_%d_%s' % (donation.id, uuid.uuid1().hex),
                       'paymentReason': "Donation to %s" % charity.name,
                       'transactionAmount': c.donation_amt,
@@ -233,6 +234,25 @@ class FacebookcanvasController(BaseController):
                                                       parameters['paymentReason'],
                                                       parameters['transactionAmount'],
                                                       parameters['returnURL'])
+        """
+        
+        import urllib, urllib2
+        import uuid
+        
+        parameters = {'callerReference': 'wgdonation_%d_%s' % (donation.id, uuid.uuid1().hex),
+                      'paymentReason': "Donation to %s" % charity.name,
+                      'transactionAmount': c.donation_amt,
+                      'recipientToken': charity.recipient_token_id,
+                      'callerKey': AWS_KEY_ID,
+                      'pipelineName': 'SingleUse',
+                      'websiteDescription': 'We Give Facebook application',
+                      'returnURL': CBUI_RETURN_URL,
+                      'version': '2009-01-09',
+                      }
+        parameters['awsSignature'] = self.fps_client.get_pipeline_signature(parameters)
+        query_string = urllib.urlencode(parameters)
+        c.direct_url = "%s?%s" % (config['fps_cbui_url'], query_string)
+        
         log.debug("\nCBUI URL -----\n" + c.direct_url + "\n")
         
         session.commit()
@@ -271,6 +291,10 @@ class FacebookcanvasController(BaseController):
             c.error_msg = 'There was a problem with your payment authorization.'
             return render('/facebook/wrap_it_up.tmpl')
         
+        if status == 'A':
+            c.error_msg = 'You cancelled the donation.  The gift will not be sent.'
+            return render('/facebook/wrap_it_up.tmpl')
+        
         if not status in ['SA', 'SB', 'SC']:
             return("status not success")
         
@@ -298,9 +322,23 @@ class FacebookcanvasController(BaseController):
         donation.transaction_id = transaction.id
         
         # invoke Pay operation on Amazon FPS
+        pay_params = {'Action': 'Pay',
+                      'SenderTokenId': transaction.sender_token_id,
+                      'RecipientTokenId': transaction.recipient_token_id,
+                      'ChargeFeeTo': 'Caller',
+                      'MarketplaceFixedFee.Value': 0,
+                      'MarketplaceFixedFee.CurrencyCode': 'USD',
+                      'MarketplaceVariableFee': 0,
+                      'TransactionAmount.Value': transaction.amount,
+                      'TransactionAmount.CurrencyCode': 'USD',
+                      'CallerReference': caller_reference,
+                      }
+        fps_response = self.fps_client.execute(pay_params)
+        """
         fps_response = self.fps_client.paySimple(transaction.sender_token_id,
                                                  transaction.amount,
                                                  transaction.caller_reference)
+        """
         #log.debug('fps_response XML: ' + ET.tostring(fps_response.element))
         
         # detect error response
