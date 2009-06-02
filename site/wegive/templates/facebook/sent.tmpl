@@ -5,23 +5,82 @@
 ##############################################################################
 
 <style>
+.fbbluebox
+{
+    background-color: #eceff6;
+    border: 1px solid #d4dae8;
+    color: #333333;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: bold;
+}
 #gift_case
 {
     background-color: #F7F7F7;
     width: 630px;
     padding: 10px 65px;
 }
+#gift_box
+{
+    /*float: left;
+    width: 600px;*/
+    width: 630px;
+    background-color: #FFFFFF;
+    padding: 8px 15px;
+    border: 1px solid #DDDDDD;
+    margin-top: 15px;
+}
+.user_pic
+{
+    position: absolute;
+}
+.user_name
+{
+    color: #888888;
+    font-weight: bold;
+}
+.gift_content
+{
+    min-height: 50px;
+    padding: 0 0 0 60px;
+}
+.gift_and_message
+{
+    padding: 15px 8px 8px 0;
+}
+.gift_image
+{
+    margin: 0 0 0 15px;
+    float: left;
+}
+.gift_message
+{
+    background: #f7f7f7;
+    padding: 15px 10px;
+    margin-left: 100px;
+    border: 1px solid #e7e7e7;
+}
+.benefitting
+{
+    width: 100%;
+    text-align: right;
+    font-style: italic;
+    margin-top: 3px;
+    color: #888888;
+}
 </style>
 
 <fb:title>My Sent Gifts</fb:title>
 
 <fb:dashboard>
-    <fb:help href="http://apps.facebook.com/test-we-give/help">Help Me!</fb:help>
+    <fb:help href="help">Help Me!</fb:help>
 </fb:dashboard>
 
 <fb:tabs>
     <fb:tab-item href="index" title="Send a Gift" />
+%if c.is_app_user:
     <fb:tab-item href="received" title="Received" />
+%endif
     <fb:tab-item href="sent" title="Sent" selected="true" />
     <fb:tab-item href="mission" title="Our Mission" />
 </fb:tabs>
@@ -30,8 +89,34 @@
     <h3>Gifts you have sent to others:</h3>
     Note: only you can see this page.<br/>
 
-    % for gift in c.sent_gifts:
-        ${gift.name}
-    % endfor
+% if not c.sent_gifts:
+    <div class="fbbluebox" style="margin: 15px 0;">
+        You have not sent any gifts yet.  <a href="index">Send a meaningful gift right now!</a>
+    </div>
+% endif
+
+% for donation in c.sent_gifts:
+
+    <div id="gift_box">
+        <div id="gift_display">
+            <div class="user_pic"><fb:profile-pic uid="${donation.fb_uid}" size="q" linked="false" /></div>
+            <div class="gift_content">
+                To: <span class="user_name"><fb:name uid="${donation.fb_uid}" linked="false" capitalize="true" /></span>
+                <div class="gift_and_message">
+                    <div class="gift_image"><img src="${h.gift_image_url(donation.gift_id)}" alt="${donation.gift.name}"></div>
+                    <div class="gift_message">
+                        ${h.literal(h.nl2br(donation.message))}
+                    </div>
+                    <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
+                    <div class="benefitting">
+                        benefitting <a href="${donation.charity.url}" title="Go to website of ${donation.charity.name}" target="_blank">${donation.charity.name}</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+% endfor
+
 </div>
 

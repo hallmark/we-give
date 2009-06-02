@@ -70,6 +70,7 @@ class FacebookcanvasController(BaseController):
         
         current_user = None
         facebook.process_request()
+        c.is_app_user = facebook.api_client.added
         if facebook.user:
             log.debug('user: %s' % facebook.user)
             current_user = facebook.user
@@ -161,12 +162,20 @@ class FacebookcanvasController(BaseController):
         else:
             return None
 
+    def _decorate_with_fb_uid(self, user_list, id_name='user_id'):
+        session = meta.Session()
+        for u in user_list:
+            user_id = getattr(u, id_name)
+            u.fb_uid = self._get_network_uid(session, user_id)
+        return user_list
+
     def send_gift(self):
         """Render gift preview for user to review and then click 'Continue with donation'"""
         log_fb_request(request)
         facebook.process_request()
+        c.is_app_user = facebook.api_client.added
         
-        if not facebook.api_client.added:
+        if not c.is_app_user:
             c.error_msg = 'You need to add this app before you can send gifts.'
             return render('/facebook/send_gift.tmpl')
         
@@ -242,7 +251,7 @@ class FacebookcanvasController(BaseController):
         parameters = {'callerReference': 'wgdonation_%d_%s' % (donation.id, uuid.uuid1().hex),
                       'paymentReason': "Donation to %s" % charity.name,
                       'transactionAmount': c.donation_amt,
-                      'recipientToken': charity.recipient_token_id,
+                      #'recipientToken': charity.recipient_token_id,
                       'callerKey': AWS_KEY_ID,
                       'pipelineName': 'SingleUse',
                       'websiteDescription': 'We Give Facebook application',
@@ -262,6 +271,7 @@ class FacebookcanvasController(BaseController):
     def wrap_it_up(self):
         log_fb_request(request)
         facebook.process_request()
+        c.is_app_user = facebook.api_client.added
         
         parameters = request.GET.copy()
         
@@ -324,11 +334,11 @@ class FacebookcanvasController(BaseController):
         # invoke Pay operation on Amazon FPS
         pay_params = {'Action': 'Pay',
                       'SenderTokenId': transaction.sender_token_id,
-                      'RecipientTokenId': transaction.recipient_token_id,
-                      'ChargeFeeTo': 'Caller',
-                      'MarketplaceFixedFee.Value': 0,
-                      'MarketplaceFixedFee.CurrencyCode': 'USD',
-                      'MarketplaceVariableFee': 0,
+                      #'RecipientTokenId': transaction.recipient_token_id,
+                      #'ChargeFeeTo': 'Caller',
+                      #'MarketplaceFixedFee.Value': 0,
+                      #'MarketplaceFixedFee.CurrencyCode': 'USD',
+                      #'MarketplaceVariableFee': 0,
                       'TransactionAmount.Value': transaction.amount,
                       'TransactionAmount.CurrencyCode': 'USD',
                       'CallerReference': caller_reference,
@@ -373,12 +383,52 @@ class FacebookcanvasController(BaseController):
         return render('/facebook/wrap_it_up.tmpl')
 
     def received(self):
-        c.received_gifts = {}
+        log_fb_request(request)
+        facebook.process_request()
+        c.is_app_user = facebook.api_client.added
+        
+        if not c.is_app_user:
+            c.error_msg = 'You must authorize We Give before you can view your received gifts.'
+            return(c.error_msg)
+        
+        current_user = facebook.user
+        if not current_user:
+            c.error_msg = 'Error getting your user info.'
+            return(c.error_msg)
+        
+        session = meta.Session()
+        
+        fb_user = self._get_fb_userpersona(session, current_user)
+        if fb_user is None or fb_user.user is None:
+            c.error_msg = 'You need to authorize the We Give app before you can view your received gifts.'
+            return(c.error_msg)
+        
+        c.received_gifts = self._decorate_with_fb_uid(fb_user.user.received_gifts, 'donor_id')
         
         return render('/facebook/received.tmpl')
 
     def sent(self):
-        c.sent_gifts = {}
+        log_fb_request(request)
+        facebook.process_request()
+        c.is_app_user = facebook.api_client.added
+        
+        if not c.is_app_user:
+            c.error_msg = 'You must authorize We Give before you can view your sent gifts.'
+            return(c.error_msg)
+        
+        current_user = facebook.user
+        if not current_user:
+            c.error_msg = 'Error getting your user info.'
+            return(c.error_msg)
+        
+        session = meta.Session()
+        
+        fb_user = self._get_fb_userpersona(session, current_user)
+        if fb_user is None or fb_user.user is None:
+            c.error_msg = 'You need to authorize the We Give app before you can view your sent gifts.'
+            return(c.error_msg)
+        
+        c.sent_gifts = self._decorate_with_fb_uid(fb_user.user.sent_gifts, 'recipient_id')
         
         return render('/facebook/sent.tmpl')
 
@@ -386,6 +436,8 @@ class FacebookcanvasController(BaseController):
         """Display one gift donation."""
         log_fb_request(request)
         facebook.process_request()
+        c.is_app_user = facebook.api_client.added
+        
         """
         current_user = None
         if facebook.user:
@@ -419,10 +471,16 @@ class FacebookcanvasController(BaseController):
         return render('/facebook/gift.tmpl')
 
     def mission(self):
+        log_fb_request(request)
+        facebook.process_request()
+        c.is_app_user = facebook.api_client.added
         
         return render('/facebook/mission.tmpl')
 
     def help(self):
+        log_fb_request(request)
+        facebook.process_request()
+        c.is_app_user = facebook.api_client.added
         
         return render('/facebook/help.tmpl')
     

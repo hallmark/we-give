@@ -135,7 +135,7 @@ a.gift:hover
 </style>
 
 <fb:dashboard>
-    <fb:help href="http://apps.facebook.com/test-we-give/help">Help Me!</fb:help>
+    <fb:help href="help">Help Me!</fb:help>
 </fb:dashboard>
 
 <fb:if-section-not-added section="profile">
@@ -147,8 +147,10 @@ a.gift:hover
 
 <fb:tabs>
     <fb:tab-item href="index" title="Send a Gift" selected="true" />
+%if c.is_app_user:
     <fb:tab-item href="received" title="Received" />
     <fb:tab-item href="sent" title="Sent" />
+%endif
     <fb:tab-item href="mission" title="Our Mission" />
 </fb:tabs>
 
@@ -181,7 +183,7 @@ a.gift:hover
 <fb:else>
     <div class="page_row">
         <div id="add-app-to-send" class="fbbluebox">
-            <a href="${c.facebook.get_login_url()}">Add this app</a> to send meaningful gifts to your friends!
+            <a href="${c.facebook.get_login_url()}">Authorize this app</a> to send meaningful gifts to your friends!
         </div>
     </div>
 </fb:else>

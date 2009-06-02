@@ -96,13 +96,15 @@
 <fb:title>Your Gift Was Sent</fb:title>
 
 <fb:dashboard>
-    <fb:help href="http://apps.facebook.com/test-we-give/help">Help Me!</fb:help>
+    <fb:help href="help">Help Me!</fb:help>
 </fb:dashboard>
 
 <fb:tabs>
     <fb:tab-item href="index" title="Send a Gift" />
+%if c.is_app_user:
     <fb:tab-item href="received" title="Received" />
     <fb:tab-item href="sent" title="Sent" />
+%endif
     <fb:tab-item href="mission" title="Our Mission" />
 </fb:tabs>
 

@@ -4,21 +4,51 @@
 ## Mark Ture. All rights reserved.
 ##############################################################################
 
+<style>
+#gift_case
+{
+    background-color: #F7F7F7;
+    width: 630px;
+    padding: 10px 65px;
+}
+.motto
+{
+    font-style: italic;
+    color: #888888;
+    font-size: 93%;
+}
+</style>
+
 <fb:title>Our Mission</fb:title>
 
 <fb:dashboard>
-    <fb:help href="http://apps.facebook.com/test-we-give/help">Help Me!</fb:help>
+    <fb:help href="help">Help Me!</fb:help>
 </fb:dashboard>
 
 <fb:tabs>
     <fb:tab-item href="index" title="Send a Gift" />
+%if c.is_app_user:
     <fb:tab-item href="received" title="Received" />
     <fb:tab-item href="sent" title="Sent" />
+%endif
     <fb:tab-item href="mission" title="Our Mission" selected="true" />
 </fb:tabs>
 
-<h3>Welcome to the app</h3>
+<div id="gift_case">
+    <h3>The Mission of the We Give Foundation:</h3>
 
-This is just a test.<br />
-
-This is being rendered in version: <fb:fbmlversion />
+    <p>
+        The We Give Foundation is dedicated to helping efficient, grassroots, volunteer-focused charities raise donations.  We believe that an effective way to bring funds to great non-profits is through micro donations of digital gifts.
+    </p>
+    <p>
+        We also truly believe that our job is to get out of the way.  We are inspired by the programs of these charities.  Our goal is not to slurp up a portion of the donations.  Instead, we would like as much of your money to go to the meaningful work carried out by the members and volunteers of the charity organizations we support.
+    </p>
+    <p>
+        Finally, we hope that you share our enthusiam in giving together.
+    </p>
+    <p>
+        Thank you,<br>
+        We Give Foundation<br>
+        <span class="motto">&quot;We Give to Friends, We Give to the World&quot;</span>
+    </p>
+</div>
