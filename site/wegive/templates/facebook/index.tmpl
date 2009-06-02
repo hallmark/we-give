@@ -287,6 +287,13 @@ a.gift:hover
     <fb:friend-selector />
 </div>
 
+<%
+    if not c.is_app_user:
+        disable_non_users = ' disabled="disabled"'
+    else:
+        disable_non_users = ''
+%>
+
 <div class="gift_preview" id="preview_box">
     <div class="preview_img_cnt">
         <img src="http://images.wegivetofriends.org/web/blank.gif" id="preview_img">
@@ -298,17 +305,17 @@ a.gift:hover
 
 <div class="page_row">
     <h3>Add your message:</h3>
-    <textarea id="gift_message" name="message" rows="4" cols="40" class="placeholder" onfocus="if(this.getValue()=='Your message here...'){this.setValue('');this.removeClassName('placeholder');}" onblur="if(this.getValue()==''){this.setValue('Your message here...');this.addClassName('placeholder');}">Your message here...</textarea>
+    <textarea id="gift_message" name="message" rows="4" cols="40" class="placeholder" onfocus="if(this.getValue()=='Your message here...'){this.setValue('');this.removeClassName('placeholder');}" onblur="if(this.getValue()==''){this.setValue('Your message here...');this.addClassName('placeholder');}"${disable_non_users}>Your message here...</textarea>
 </div>
 
 <div class="page_row">
     <h3>Specify the amount:</h3>
-    $ <input id="gift_amount" type="text" name="amount" class="inputtext" value="1.00" autocomplete="off" /> USD
+    $ <input id="gift_amount" type="text" name="amount" class="inputtext" value="1.00" autocomplete="off"${disable_non_users} /> USD
 </div>
 
 <div class="page_row">
     <h3>Select the charity:</h3>
-        <select name="charity_val" id="gift_charity">
+        <select name="charity_val" id="gift_charity"${disable_non_users}>
     % for charity in c.charities:
             <option value="${charity.id}">${charity.name}</option>
     % endfor
@@ -322,6 +329,7 @@ a.gift:hover
     </fb:fbml>
 </div>
 
+<%doc>
 <div class="page_row">
     <h3>Delivery method:</h3>
     <div id="privacy_controls">
@@ -341,9 +349,10 @@ a.gift:hover
         </div>
     </div>
 </div>
+</%doc>
 
 <div class="page_row">
-    <input type="submit" value="Continue" class="inputsubmit" />
+    <input type="submit" value="Continue" class="inputsubmit"${disable_non_users} />
 </div>
 
 </form>
