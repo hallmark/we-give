@@ -1,0 +1,48 @@
+## -*- coding: utf-8 -*-
+##
+## All portions of the code written by Mark Ture are Copyright (c) 2009
+## Mark Ture. All rights reserved.
+##############################################################################
+
+<style>
+#gift_case
+{
+    background-color: #F7F7F7;
+    width: 630px;
+    padding: 10px 65px;
+}
+.motto
+{
+    font-style: italic;
+    color: #888888;
+    font-size: 93%;
+}
+</style>
+
+<fb:title>Your Invitation Was Sent</fb:title>
+
+<fb:dashboard>
+    <fb:help href="help">Help Me!</fb:help>
+</fb:dashboard>
+
+<fb:tabs>
+    <fb:tab-item href="index" title="Send a Gift" />
+%if c.is_app_user:
+    <fb:tab-item href="received" title="Received" />
+    <fb:tab-item href="sent" title="Sent" />
+%endif
+    <fb:tab-item href="mission" title="Our Mission" />
+</fb:tabs>
+
+<div id="gift_case">
+    <h3>Your Invitation Was Sent</h3>
+
+    <p>
+        Thank you for inviting <fb:name uid="${c.invitee_uid}" ifcantsee="your friend" /> to We Give.
+    </p>
+    <p>&nbsp;</p>
+    <p>
+        We Give Foundation<br>
+        <span class="motto">&quot;We Give to Friends, We Give to the World&quot;</span>
+    </p>
+</div>

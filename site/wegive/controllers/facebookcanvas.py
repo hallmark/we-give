@@ -394,7 +394,42 @@ class FacebookcanvasController(BaseController):
         c.recipient_fb_uid = self._get_network_uid(session, donation.recipient_id)
         c.payment_method = transaction.payment_method
         c.pay_status = transaction.fps_transaction_status
+        
+        c.canvas_url = config['fbapp_canvas_url']
         return render('/facebook/wrap_it_up.tmpl')
+
+    def invite_sent(self):
+        log_fb_request(request)
+        facebook.process_request()
+        c.is_app_user = facebook.api_client.added
+        
+        c.invitee_uid = request.params.get('invitee')
+        return render('/facebook/invite_sent.tmpl')
+
+    def allgifts(self):
+        log_fb_request(request)
+        facebook.process_request()
+        c.is_app_user = facebook.api_client.added
+        
+        c.recipient_id = request.params.get('uid')
+        if not c.recipient_id:
+            c.error_msg = 'No user specified'
+            return(c.error_msg)
+        
+        session = meta.Session()
+        
+        fb_user = self._get_fb_userpersona(session, c.recipient_id)
+        if fb_user is None or fb_user.user is None:
+            c.error_msg = 'Unable to retrieve user of gifts.'
+            return(c.error_msg)
+        
+        # TODO: add clause for privacy if viewer is also subject
+        c.received_gifts = self._decorate_with_fb_uid(fb_user.user.received_gifts, 'donor_id')
+        
+        if c.recipient_id == facebook.user:
+            return render('/facebook/received.tmpl')
+        else:
+            return render('/facebook/allgifts.tmpl')
 
     def received(self):
         log_fb_request(request)

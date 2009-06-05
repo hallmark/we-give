@@ -91,6 +91,10 @@
     margin-left: 27px;
     padding-top: 2px;
 }
+.invite_button
+{
+    margin: 10px 0 7px 35px;
+}
 </style>
 
 <fb:title>Your Gift Was Sent</fb:title>
@@ -146,6 +150,26 @@
     <div class="gift_store_row">
         On behalf of <a href="${c.donation.charity.url}" title="Go to ${c.donation.charity.name}'s website" target="_blank">${c.donation.charity.name}</a>, thank you for your donation!
     </div>
+    
+    <%
+        content = """I just sent you a meaningful donation gift through We Give, benefitting %s.
+            Add this app to view your gift and send meaningful gifts to others friends.
+            <fb:req-choice url="%s/gift?id=%d" label="View Gift I Sent You" />
+            """ % (c.donation.charity.name, c.canvas_url, c.donation.id)
+    %>
+    
+    <fb:if-is-app-user uid="${c.recipient_fb_uid}">
+    <fb:else>
+        <fb:name uid="${c.recipient_fb_uid}" firstnameonly="true" /> is not a user of We Give.
+        Invite <fb:pronoun uid="${c.recipient_fb_uid}" objective="true" /> so that <fb:pronoun uid="${c.recipient_fb_uid}" /> can view your gift!
+        <div class="invite_button">
+            <fb:request-form action="invite_sent" method="POST" invite="true" type="We Give" content="${content | h}">
+                <input type="hidden" fb_protected="true" name="invitee" value="${c.recipient_fb_uid}" />
+                <fb:request-form-submit uid="${c.recipient_fb_uid}" label="Invite %n to We Give" />
+            </fb:request-form>
+        </div>
+    </fb:else>
+    </fb:if-is-app-user>
 %endif
 </div>
 
