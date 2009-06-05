@@ -21,6 +21,7 @@ from facebook.wsgi import facebook
 import fpys
 import uuid
 import xml.etree.ElementTree as ET
+import time
 
 from wegive.lib.base import BaseController, render
 import wegive.lib.helpers as h
@@ -59,7 +60,10 @@ class FacebookcanvasController(BaseController):
 
     #@template('facebook/index')
     def index(self):
+        realstart = start = time.time()
+        
         log_fb_request(request)
+        log.debug('time to log request: %.3f ms' % ((time.time() - start)*1000.0))
         
         #
         # TODOs for canvas page:
@@ -69,7 +73,9 @@ class FacebookcanvasController(BaseController):
         #
         
         current_user = None
+        start = time.time()
         facebook.process_request()
+        log.debug('time to do facebook.process_request(): %.3f ms' % ((time.time() - start)*1000.0))
         c.is_app_user = facebook.api_client.added
         if facebook.user:
             log.debug('user: %s' % facebook.user)
@@ -79,12 +85,17 @@ class FacebookcanvasController(BaseController):
             current_user = facebook.canvas_user
         
         if current_user:
+            start = time.time()
             # TODO: need to handle "URLError: urlopen error" exceptions thrown from api calls
+            #" " " Removing unnecessary Facebook API calls
             info = facebook.api_client.users.getInfo([current_user], ['name', 'first_name', 'last_name', 'pic_square', 'locale'])[0]
             log.debug('name: %s, pic: %s, locale: %s' % (info['name'], info['pic_square'], info['locale']) )
             friends = facebook.api_client.friends.get(uid=current_user)
             friends = facebook.api_client.users.getInfo(friends, ['uid', 'name', 'pic_square', 'locale'])
             c.friends = friends
+            #" " "
+            log.debug('time to make facebook API calls: %.3f ms' % ((time.time() - start)*1000.0))
+            
             
             # look up current_user in UserPersona table
             # if exists:
@@ -96,6 +107,7 @@ class FacebookcanvasController(BaseController):
             # TODO: we cannot store the first_name, last_name - the user needs to provide it to us
             # TODO: need a way to map existing Users to Facebook users
             
+            start = time.time()
             session = meta.Session()
             
             fb_user = self._get_fb_userpersona(session, current_user, create_if_missing=True)
@@ -122,6 +134,7 @@ class FacebookcanvasController(BaseController):
         
         # get list of charities that have registered thru CBUI as payment recipients
         c.charities = charity_q.filter(Charity.recipient_token_id != None).order_by(Charity.created)
+        log.debug('time for all DB calls: %.3f ms' % ((time.time() - start)*1000.0))
         
         c.form_uuid = uuid.uuid1().hex
         
@@ -135,6 +148,7 @@ class FacebookcanvasController(BaseController):
         
         # TODO: template should know if user has added app - don't render 'Received' / 'Sent' tabs for non-app users
         
+        log.debug('total time: %.3f ms' % ((time.time() - realstart)*1000.0))
         
         return render('/facebook/index.tmpl')
 
