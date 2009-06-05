@@ -87,13 +87,13 @@ class FacebookcanvasController(BaseController):
         if current_user:
             start = time.time()
             # TODO: need to handle "URLError: urlopen error" exceptions thrown from api calls
-            #" " " Removing unnecessary Facebook API calls
+            """ Removing unnecessary Facebook API calls
             info = facebook.api_client.users.getInfo([current_user], ['name', 'first_name', 'last_name', 'pic_square', 'locale'])[0]
             log.debug('name: %s, pic: %s, locale: %s' % (info['name'], info['pic_square'], info['locale']) )
             friends = facebook.api_client.friends.get(uid=current_user)
             friends = facebook.api_client.users.getInfo(friends, ['uid', 'name', 'pic_square', 'locale'])
             c.friends = friends
-            #" " "
+            """
             log.debug('time to make facebook API calls: %.3f ms' % ((time.time() - start)*1000.0))
             
             
