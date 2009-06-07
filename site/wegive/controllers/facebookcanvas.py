@@ -18,9 +18,7 @@ from pylons import config, app_globals
 from facebook import FacebookError
 from facebook.wsgi import facebook
 
-import fpys
 import uuid
-import xml.etree.ElementTree as ET
 import time
 
 from wegive.lib.base import BaseController, render
@@ -29,10 +27,7 @@ import wegive.model as model
 import wegive.model.meta as meta
 from wegive.model import Charity, Donation, Gift, User, UserPersona, SocialNetwork, Transaction
 import wegive.logic.facebook_platform as fb_logic
-
-AWS_KEY_ID = config['AWS_KEY_ID']
-AWS_SECRET_KEY = config['AWS_SECRET_KEY']
-CBUI_RETURN_URL = config['fps_cbui_return_url']
+import wegive.logic.payments as fps_logic
 
 log = logging.getLogger(__name__)
 
@@ -241,42 +236,16 @@ class FacebookcanvasController(BaseController):
         session.add(donation)
         session.flush()
         
-        # TODO: commit, then redirect to review_gift page with donation ID??
+        # TODO: to prevent form resubmission, commit, then redirect to review_gift page with donation ID??
         
         # compute parameters for request to Co-Branded FPS pages
-        """
-        parameters = {'callerReference': 'wgdonation_%d_%s' % (donation.id, uuid.uuid1().hex),
-                      'paymentReason': "Donation to %s" % charity.name,
-                      'transactionAmount': c.donation_amt,
-                      'callerKey': AWS_KEY_ID,
-                      'pipelineName': 'SingleUse',
-                      'returnURL': CBUI_RETURN_URL
-                      }
-        
-        c.direct_url = self.fps_client.getPipelineUrl(parameters['callerReference'],
-                                                      parameters['paymentReason'],
-                                                      parameters['transactionAmount'],
-                                                      parameters['returnURL'])
-        """
-        
-        import urllib, urllib2
-        import uuid
-        
-        parameters = {'callerReference': 'wgdonation_%d_%s' % (donation.id, uuid.uuid1().hex),
-                      'paymentReason': "Donation to %s" % charity.name,
-                      'transactionAmount': c.donation_amt,
-                      'recipientToken': charity.recipient_token_id,
-                      'callerKey': AWS_KEY_ID,
-                      'pipelineName': 'SingleUse',
-                      'websiteDescription': 'We Give Facebook application',
-                      'returnURL': CBUI_RETURN_URL,
-                      'version': '2009-01-09',
-                      }
-        parameters['awsSignature'] = self.fps_client.get_pipeline_signature(parameters)
-        query_string = urllib.urlencode(parameters)
-        c.direct_url = "%s?%s" % (config['fps_cbui_url'], query_string)
-        
-        log.debug("\nCBUI URL -----\n" + c.direct_url + "\n")
+        caller_ref = 'wgdonation_%d_%s' % (donation.id, uuid.uuid1().hex)
+        reason = 'Donation to %s' % charity.name
+        c.direct_url = fps_logic.get_cbui_url(caller_ref,
+                                              reason,
+                                              c.donation_amt,
+                                              recipient_token=charity.recipient_token_id,
+                                              website_desc='We Give Facebook application')
         
         session.commit()
         
@@ -346,30 +315,19 @@ class FacebookcanvasController(BaseController):
         donation.transaction_id = transaction.id
         
         # invoke Pay operation on Amazon FPS
-        pay_params = {'Action': 'Pay',
-                      'SenderTokenId': transaction.sender_token_id,
-                      'RecipientTokenId': transaction.recipient_token_id,
-                      'ChargeFeeTo': 'Caller',
-                      'MarketplaceFixedFee.Value': 0,
-                      'MarketplaceFixedFee.CurrencyCode': 'USD',
-                      'MarketplaceVariableFee': 0,
-                      'TransactionAmount.Value': transaction.amount,
-                      'TransactionAmount.CurrencyCode': 'USD',
-                      'CallerReference': caller_reference,
-                      }
-        fps_response = self.fps_client.execute(pay_params)
-        """
-        fps_response = self.fps_client.paySimple(transaction.sender_token_id,
+        fps_response = fps_logic.pay_marketplace(transaction.sender_token_id,
+                                                 transaction.recipient_token_id,
                                                  transaction.amount,
-                                                 transaction.caller_reference)
-        """
-        #log.debug('fps_response XML: ' + ET.tostring(fps_response.element))
-        
+                                                 caller_reference,
+                                                 charge_caller=True)
+
         # detect error response
         if hasattr(fps_response, 'errors'):
             fps_error = fps_response.errors.error
-            log.debug("Error from FPS action 'Pay'\nRequestID: %s\nCode: %s\nMessage: %s" % (fps_response.requestID, fps_error.code, fps_error.message))
+            log.debug("Error from FPS action 'Pay'\nCallerReference: %s\nRequestID: %s\nCode: %s\nMessage: %s" % (caller_reference,fps_response.requestID, fps_error.code, fps_error.message))
             # TODO: depending on whether this condition can be retried, display error to end-user
+            c.error_msg = 'Payment authorization was not successful.'
+            return render('/facebook/wrap_it_up.tmpl')
         
         #log.debug("fps response dir: " + str(dir(fps_response)))
         transaction.fps_transaction_id = fps_response.payResult.transactionId
