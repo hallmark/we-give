@@ -26,5 +26,8 @@ class HubSiteController(BaseController):
     def privacy(self):
         return render('/web/privacy.tmpl')
 
+    def contact(self):
+        return render('/web/contact.tmpl')
+
     def help(self):
         return render('/web/help.tmpl')

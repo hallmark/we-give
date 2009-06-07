@@ -1,0 +1,31 @@
+## -*- coding: utf-8 -*-
+##
+## All portions of the code written by Mark Ture are Copyright (c) 2009
+## Mark Ture. All rights reserved.
+##############################################################################
+<%inherit file="/include/base.tmpl"/>
+
+<%def name="title()">We Give | Contact Us</%def>
+<%def name="head()">
+    <meta name="robots" content="noindex">
+    ${parent.head()}
+    <style type="text/css">
+        .foo
+        {
+            color: red;
+        }
+    </style>
+</%def>
+
+    <div class="content">
+        <h3>Contact Us</h3>
+        <p>
+            Please send any feedback to <a href="mailto:feedback@wegivetofriends.org">feedback@wegivetofriends.org</a>.
+        </p>
+        <p>
+            To terminate your account, please send a message with the subject "Close my account" to <a href="mailto:support@wegivetofriends.org">support@wegivetofriends.org</a>.
+        </p>
+        <p>
+            Thank you.
+        </p>
+    </div>
