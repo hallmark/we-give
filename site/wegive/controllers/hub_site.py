@@ -19,3 +19,12 @@ class HubSiteController(BaseController):
         #return render('/hub_site.mako')
         # or, return a response
         return render('/web/index.tmpl')
+
+    def terms_of_service(self):
+        return render('/web/tos.tmpl')
+
+    def privacy(self):
+        return render('/web/privacy.tmpl')
+
+    def help(self):
+        return render('/web/help.tmpl')

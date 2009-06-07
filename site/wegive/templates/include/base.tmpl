@@ -1,0 +1,31 @@
+## -*- coding: utf-8 -*-
+##
+## All portions of the code written by Mark Ture are Copyright (c) 2009
+## Mark Ture. All rights reserved.
+##############################################################################
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+   "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" >
+    <title>${self.title()}</title>
+    ${self.head()}
+</head>
+<body>
+    ${self.header()}
+    ${next.body()}
+    ${self.footer()}
+</body>
+</html>
+
+<%def name="title()">We Give to Friends</%def>
+<%def name="head()">
+    ${h.stylesheet_link(h.url_for('/css/main.css'))}
+</%def>
+<%def name="header()"><div id="header"><img src="wgtf-banner.png" alt="We Give to Friends"></div></%def>
+<%def name="footer()"><div id="footer">Copyright 2009 &copy; We Give Foundation. All rights reserved.</div></%def>
+
+<%def name="res1()"></%def>
+<%def name="res2()"></%def>
+<%def name="res3()"></%def>

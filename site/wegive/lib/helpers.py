@@ -13,6 +13,7 @@ available to Controllers. This module is available to both as 'h'.
 
 from webhelpers.html import literal
 from webhelpers.html.converters import format_paragraphs, nl2br
+from webhelpers.html.tags import stylesheet_link
 from webhelpers.text import plural
 from routes import url_for
 

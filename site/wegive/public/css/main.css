@@ -1,0 +1,29 @@
+body
+{
+    background-color: #FF99FF; /*#FFFFFB;*/
+}
+#header
+{
+    margin: 150px auto 0;
+    width: 650px;
+}
+.content
+{
+    font-family: Arial;
+    font-size: 93%;
+    width: 600px;
+    margin: 0 auto 0;
+    background-color: #FFFCE4;
+    border: 2px solid #FF0099;
+    padding: 30px 30px 150px;
+}
+#footer
+{
+    font-family: Arial;
+    font-size: 87%;
+    font-style: italic;
+    width: 600px;
+    margin: 0 auto;
+    padding: 4px 30px;
+    text-align: right;
+}

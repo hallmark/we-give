@@ -98,9 +98,9 @@
 
     <div id="gift_box">
         <div id="gift_display">
-            <div class="user_pic"><fb:profile-pic uid="${donation.fb_uid}" size="q" linked="false" /></div>
+            <div class="user_pic"><fb:profile-pic uid="${donation.fb_uid}" size="q" /></div>
             <div class="gift_content">
-                From: <span class="user_name"><fb:name uid="${donation.fb_uid}" linked="false" capitalize="true" /></span>
+                From: <span class="user_name"><fb:name uid="${donation.fb_uid}" capitalize="true" /></span>
                 <div class="gift_and_message">
                     <div class="gift_image"><img src="${h.gift_image_url(donation.gift_id)}" alt="${donation.gift.name}"></div>
                     <div class="gift_message">
