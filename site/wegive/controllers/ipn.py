@@ -69,21 +69,33 @@ class IpnController(BaseController):
             log.error('No transactionId found in IPN.')
             return('transactionId not found')
         
+        buyer_name = request.POST.get('buyerName')
+        
         # look up transaction in DB
         session = meta.Session()
         txn_q = meta.Session.query(Transaction)
         transaction = txn_q.filter_by(fps_transaction_id=transaction_id).first()  # TODO: use one() and catch exceptions?
         if transaction is None:
             log.error('Transaction %s could not be found in DB' % transaction_id)
+            # TODO: record detailed info in case DB insert was not committed before IPN was received!
             return('transaction info not found')
         
         if transaction_status.upper() == 'PENDING':
             # if status is pending, look up transaction in DB.
             # If info in DB:
             #  - transaction cannot be found, log error
-            #  - status pending, do nothing
+            #  - status pending, capture buyer name to DB if needed
             #  - status succeeded, IPN must be out of order, log it
-            pass
+            if transaction.fps_transaction_status is None:
+                log.debug('Found transaction that has no value for fps_transaction_status, ID: %s' % transaction_id)
+                transaction.fps_transaction_status = 'Pending'
+                session.commit()
+            elif transaction.fps_transaction_status == 'Pending':
+                # update buyer name if empty
+                if transaction.buyer_name is None and buyer_name is not None:
+                    transaction.buyer_name = buyer_name
+            elif transaction.fps_transaction_status == 'Success':
+                log.debug('Received IPN for pending status out of order - txn already succeeded.  Ignoring.')
         
         elif transaction_status.upper() == 'SUCCESS':
             # if status is success, look up transaction in DB.
@@ -94,6 +106,9 @@ class IpnController(BaseController):
                 transaction.fps_transaction_status = 'Success'
                 transaction.success_date = model.now()
                 transaction.donation.pending = False
+                # update buyer name if empty
+                if transaction.buyer_name is None and buyer_name is not None:
+                    transaction.buyer_name = buyer_name
                 fb_logic.update_user_fbml_by_wg_userid(transaction.donation.recipient_id)
                 session.commit()
             elif transaction.fps_transaction_status == 'Success':

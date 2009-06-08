@@ -317,6 +317,7 @@ class Transaction(Base):
     last_attempt_date = Column(types.DateTime())  # last time Pay operation was attempted
     success_date = Column(types.DateTime())
     # additional details from Amazon FPS
+    buyer_name = Column(types.Unicode(128))
     
     def __init__(self, fps_action, donation_id, caller_reference):
         self.fps_action = fps_action
