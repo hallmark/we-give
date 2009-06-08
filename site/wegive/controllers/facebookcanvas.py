@@ -465,6 +465,8 @@ class FacebookcanvasController(BaseController):
             log.debug(str(err))
             c.error_msg = 'Unable to find that gift.'
         
+        c.show_welcome = (c.is_app_user == False and facebook.canvas_user == unicode(c.recipient_id))
+        
         return render('/facebook/gift.tmpl')
 
     def mission(self):
