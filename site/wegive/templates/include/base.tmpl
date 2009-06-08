@@ -16,6 +16,7 @@
     ${self.header()}
     ${next.body()}
     ${self.footer()}
+    ${self.tracker()}
 </body>
 </html>
 
@@ -25,7 +26,14 @@
 </%def>
 <%def name="header()"><div id="header"><img src="wgtf-banner.png" alt="We Give to Friends"></div></%def>
 <%def name="footer()"><div id="footer">Copyright 2009 &copy; We Give Foundation. All rights reserved.</div></%def>
-
-<%def name="res1()"></%def>
-<%def name="res2()"></%def>
-<%def name="res3()"></%def>
+<%def name="tracker()">
+    <script type="text/javascript">
+    var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+    document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+    </script>
+    <script type="text/javascript">
+    try {
+    var pageTracker = _gat._getTracker("UA-9214235-1");
+    pageTracker._trackPageview();
+    } catch(err) {}</script>
+</%def>
