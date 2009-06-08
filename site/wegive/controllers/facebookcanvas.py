@@ -53,6 +53,7 @@ class FacebookcanvasController(BaseController):
     
     def __before__(self):
         c.facebook = facebook
+        c.canvas_url = config['fbapp_canvas_url']
 
     #@template('facebook/index')
     def index(self):
@@ -343,7 +344,6 @@ class FacebookcanvasController(BaseController):
         c.payment_method = transaction.payment_method
         c.pay_status = transaction.fps_transaction_status
         
-        c.canvas_url = config['fbapp_canvas_url']
         return render('/facebook/wrap_it_up.tmpl')
 
     def invite_sent(self):

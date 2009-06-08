@@ -11,6 +11,17 @@
     width: 630px;
     padding: 20px 65px;
 }
+.side_links
+{
+    float: right;
+    padding-right: 30px;
+}
+.side_link
+{
+    width: 100px;
+    padding: 2px 7px;
+    border-bottom: 1px solid #D8DFEA;
+}
 #gift_box
 {
     /*float: left;
@@ -19,7 +30,7 @@
     background-color: #FFFFFF;
     padding: 8px 15px;
     border: 1px solid #DDDDDD;
-    margin-top: 30px;
+    margin-top: 20px;
     margin-left: 67px;
 }
 .donor_pic
@@ -92,6 +103,17 @@
     <fb:mediaheader uid="${c.recipient_id}">
         <fb:header-title>A Gift to <fb:name uid="${c.recipient_id}" linked="false" capitalize="true" /></fb:header-title>
     </fb:mediaheader>
+    
+    <div class="side_links">
+        <div class="side_link">
+            <a href="${c.canvas_url}/">Give to a Friend</a>
+        </div>
+        <div class="side_link">
+            <a href="${c.canvas_url}/mission">What is We Give?</a>
+        </div>
+        <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
+    </div>
+    <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
 
     <div id="gift_box">
         <div id="gift_display">
