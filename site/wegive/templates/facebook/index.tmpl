@@ -9,6 +9,11 @@
 {
     float: right;
 }
+#add_profile_text
+{
+    float: left;
+    width: 490px;
+}
 .page_row
 {
     margin: 20px 0;
@@ -139,10 +144,30 @@ a.gift:hover
 </fb:dashboard>
 
 <fb:if-section-not-added section="profile">
+%if c.just_installed:
+    <div class="page_row">
+        <div class="fbbluebox">
+            <div id="add_profile_text">
+            %if c.gift_count > 0:
+                You have received ${h.plural(c.gift_count, 'gift', 'gifts')} from your friends.
+            %endif
+                Add We Give to your profile to display your gifts!
+            </div>
+            <div id="add_profile_box">
+                %if c.gift_count > 0:
+                    <div style="height: 7px; font-size: 1px; clear: right;">&nbsp;</div>
+                %endif
+                <fb:add-section-button section="profile" />
+            </div>
+            <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
+        </div>
+    </div>
+%else:
     <div id="add_profile_box">
         <fb:add-section-button section="profile" />
     </div>
     <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
+%endif
 </fb:if-section-not-added>
 
 <fb:tabs>

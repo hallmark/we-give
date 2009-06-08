@@ -78,6 +78,9 @@ class FacebookcanvasController(BaseController):
         elif facebook.canvas_user:
             log.debug('canvas_user: %s' % facebook.canvas_user)
             current_user = facebook.canvas_user
+
+        c.just_installed = (request.GET.get('installed') == '1')
+        c.gift_count = None
         
         if current_user:
             start = time.time()
@@ -112,6 +115,9 @@ class FacebookcanvasController(BaseController):
                 fb_user.is_app_user = facebook.api_client.added
 
             session.flush()
+            
+            if c.just_installed:
+                c.gift_count = len(fb_user.user.received_gifts)
             
             if fb_user.is_app_user and not fb_logic.has_profile_fbml(current_user):
                 ALLOW_FBML_INIT_ON_FIRST_VISIT = True
