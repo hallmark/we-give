@@ -61,6 +61,20 @@ class AdminController(BaseController):
         c.user_table_value = UserTableFiller(session).get_value()
         return render('/web/admin/users.tmpl')
 
+    def allocations(self):
+        from facebook import FacebookError
+        from facebook.wsgi import facebook
+        
+        notifications_per_day = facebook.api_client.admin.getAllocation(integration_point_name='notifications_per_day')
+        announcement_notifications_per_week = facebook.api_client.admin.getAllocation(integration_point_name='announcement_notifications_per_week')
+        requests_per_day = facebook.api_client.admin.getAllocation(integration_point_name='requests_per_day')
+        emails_per_day = facebook.api_client.admin.getAllocation(integration_point_name='emails_per_day')
+        email_disable_message_location = facebook.api_client.admin.getAllocation(integration_point_name='email_disable_message_location')
+
+        log.debug('notifications_per_day: %d' % (notifications_per_day))
+        return('notifications_per_day: %d<br>announcement_notifications_per_week: %d<br>requests_per_day: %d<br>emails_per_day: %d<br>email_disable_message_location: %d' % (notifications_per_day, announcement_notifications_per_week, requests_per_day, emails_per_day, email_disable_message_location))
+        
+
     def reg_recipient(self):
         charity_q = meta.Session.query(Charity)
         c.charities = charity_q.order_by(Charity.created)
@@ -169,4 +183,15 @@ class AdminController(BaseController):
             return 'No record of FB user %s' % uid
         
         fb_logic.update_user_fbml_by_userpersona(fb_userpersona)
+        return 'done'
+    
+    def set_ref_handle(self):
+        handle = request.params.get('handle')
+        if handle is None:
+            return 'Please specify handle'
+        handle = 'profileCommonStyles'
+        fbml = '<style type="text/css">.gift_box{width: 80px; margin:0 5px 20px; float:left;} .gift_img{width: 64px; margin:0 auto;} .gift_caption{width: 80px; text-align: center; margin-top:2px;} .no_items{text-align:center; margin:10px auto;}</style>'
+        
+        import wegive.logic.facebook_platform as fb_logic
+        fb_logic.set_ref_handle(handle, fbml)
         return 'done'

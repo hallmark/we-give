@@ -16,6 +16,7 @@ from facebook import FacebookError
 import wegive.lib.helpers as h
 import wegive.model.meta as meta
 from wegive.model import Charity, Donation, Gift, User, UserPersona, SocialNetwork, Transaction
+import wegive.logic.user as user_logic
 
 CANVAS_URL = config['fbapp_canvas_url']
 
@@ -51,22 +52,22 @@ def update_user_fbml_by_wg_userid(user_id):
 
 
 def _update_user_fbml(facebook_uid, wg_user):
-    received_gifts = wg_user.received_gifts
+    received_gifts = user_logic.decorate_with_fb_uid(wg_user.received_gifts, 'donor_id')
     gift_count = len(received_gifts)
     
     if gift_count == 0:
-        skinny_content = '<style>.no_items{text-align:center; margin:10px auto;}</style><fb:subtitle>&nbsp;<fb:action href="%s/">Give to a Friend</fb:action></fb:subtitle><div class="no_items">No gifts yet.</div>' % CANVAS_URL
+        skinny_content = '<fb:ref handle="profileCommonStyles" /><fb:subtitle>&nbsp;<fb:action href="%s/">Give to a Friend</fb:action></fb:subtitle><div class="no_items">No gifts yet.</div>' % CANVAS_URL
         boxes_content = skinny_content
     else:
         top_gifts = received_gifts[:4]
         
-        subtitle_fbml = '<style>.gift_box{width: 90px; margin:10px 5px;}</style><fb:subtitle><a href="%s/allgifts?uid=%d">%s</a><fb:action href="%s/">Give to a Friend</fb:action></fb:subtitle>' % (CANVAS_URL, facebook_uid, h.plural(gift_count, 'gift', 'gifts'), CANVAS_URL)
+        subtitle_fbml = '<fb:ref handle="profileCommonStyles" /><fb:subtitle><a href="%s/allgifts?uid=%d">%s</a><fb:action href="%s/">Give to a Friend</fb:action></fb:subtitle>' % (CANVAS_URL, facebook_uid, h.plural(gift_count, 'gift', 'gifts'), CANVAS_URL)
         
         gifts_buf = []
         for donation in top_gifts:
-            gifts_buf.append('<div class="gift_box"><a href="%s/gift?id=%d" title="%s"><img src="' % (CANVAS_URL, donation.id, donation.gift.name))
+            gifts_buf.append('<div class="gift_box"><div class="gift_img"><a href="%s/gift?id=%d" title="%s"><img src="' % (CANVAS_URL, donation.id, donation.gift.name))
             gifts_buf.append(h.gift_image_url(donation.gift_id))
-            gifts_buf.append('"></a></div>')
+            gifts_buf.append('"></a></div><div class="gift_caption"><span class="caption_from">From:</span> <span class="caption_name"><fb:name uid="%s" firstnameonly="true" useyou="false" ifcantsee="Anon" /></span></div></div>' % donation.fb_uid)
         gifts_fbml = ''.join(gifts_buf)
         
         skinny_content = subtitle_fbml + gifts_fbml
@@ -79,3 +80,10 @@ def _update_user_fbml(facebook_uid, wg_user):
         log.debug('setFBML response: ' + repr(set_fbml_res))
     except FacebookError, err:
         log.debug('Unexpected error calling facebook.setFBML: ' + str(err))
+
+def set_ref_handle(handle, fbml):
+    try:
+        set_ref_res = fb.api_client.fbml.setRefHandle(handle=handle, fbml=fbml)
+        log.debug('setFBML response: ' + repr(set_ref_res))
+    except FacebookError, err:
+        log.debug('Unexpected error calling facebook.setRefHandle: ' + str(err))

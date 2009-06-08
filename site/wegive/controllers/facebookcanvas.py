@@ -28,6 +28,7 @@ import wegive.model.meta as meta
 from wegive.model import Charity, Donation, Gift, User, UserPersona, SocialNetwork, Transaction
 import wegive.logic.facebook_platform as fb_logic
 import wegive.logic.payments as fps_logic
+import wegive.logic.user as user_logic
 
 log = logging.getLogger(__name__)
 
@@ -166,23 +167,6 @@ class FacebookcanvasController(BaseController):
             session.add(fb_userpersona)
         
         return fb_userpersona
-
-    def _get_network_uid(self, session, user_id, network_name=u'Facebook'):
-        network = meta.Session.query(SocialNetwork).filter_by(name=network_name).one()
-        
-        userpersona_q = meta.Session.query(UserPersona)
-        up = userpersona_q.filter_by(network_id=network.id).filter_by(wg_user_id=user_id).first()
-        if up:
-            return up.network_user_id
-        else:
-            return None
-
-    def _decorate_with_fb_uid(self, user_list, id_name='user_id'):
-        session = meta.Session()
-        for u in user_list:
-            user_id = getattr(u, id_name)
-            u.fb_uid = self._get_network_uid(session, user_id)
-        return user_list
 
     def send_gift(self):
         """Render gift preview for user to review and then click 'Continue with donation'"""
@@ -355,7 +339,7 @@ class FacebookcanvasController(BaseController):
         session.commit()
         
         c.donation = donation
-        c.recipient_fb_uid = self._get_network_uid(session, donation.recipient_id)
+        c.recipient_fb_uid = user_logic.get_network_uid(session, donation.recipient_id)
         c.payment_method = transaction.payment_method
         c.pay_status = transaction.fps_transaction_status
         
@@ -388,7 +372,7 @@ class FacebookcanvasController(BaseController):
             return(c.error_msg)
         
         # TODO: add clause for privacy if viewer is also subject
-        c.received_gifts = self._decorate_with_fb_uid(fb_user.user.received_gifts, 'donor_id')
+        c.received_gifts = user_logic.decorate_with_fb_uid(fb_user.user.received_gifts, 'donor_id')
         
         if c.recipient_id == facebook.user:
             return render('/facebook/received.tmpl')
@@ -416,7 +400,7 @@ class FacebookcanvasController(BaseController):
             c.error_msg = 'You need to authorize the We Give app before you can view your received gifts.'
             return(c.error_msg)
         
-        c.received_gifts = self._decorate_with_fb_uid(fb_user.user.received_gifts, 'donor_id')
+        c.received_gifts = user_logic.decorate_with_fb_uid(fb_user.user.received_gifts, 'donor_id')
         
         return render('/facebook/received.tmpl')
 
@@ -441,7 +425,7 @@ class FacebookcanvasController(BaseController):
             c.error_msg = 'You need to authorize the We Give app before you can view your sent gifts.'
             return(c.error_msg)
         
-        c.sent_gifts = self._decorate_with_fb_uid(fb_user.user.sent_gifts, 'recipient_id')
+        c.sent_gifts = user_logic.decorate_with_fb_uid(fb_user.user.sent_gifts, 'recipient_id')
         
         return render('/facebook/sent.tmpl')
 
@@ -475,8 +459,8 @@ class FacebookcanvasController(BaseController):
             # get the gift donation info
             c.donation = meta.Session.query(Donation).get(gift_id)
             session = meta.Session()
-            c.recipient_id = self._get_network_uid(session, c.donation.recipient_id)
-            c.donor_id = self._get_network_uid(session, c.donation.donor_id)
+            c.recipient_id = user_logic.get_network_uid(session, c.donation.recipient_id)
+            c.donor_id = user_logic.get_network_uid(session, c.donation.donor_id)
         except Exception, err:
             log.debug(str(err))
             c.error_msg = 'Unable to find that gift.'
