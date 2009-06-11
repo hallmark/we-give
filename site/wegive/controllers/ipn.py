@@ -69,6 +69,7 @@ class IpnController(BaseController):
             log.error('No transactionId found in IPN.')
             return('transactionId not found')
         
+        status_code = request.POST.get('statusCode')
         buyer_name = request.POST.get('buyerName')
         
         # look up transaction in DB
@@ -91,9 +92,12 @@ class IpnController(BaseController):
                 transaction.fps_transaction_status = 'Pending'
                 session.commit()
             elif transaction.fps_transaction_status == 'Pending':
+                if status_code is not None:
+                    transaction.fps_status_code = status_code
                 # update buyer name if empty
                 if transaction.buyer_name is None and buyer_name is not None:
                     transaction.buyer_name = buyer_name
+                session.commit()
             elif transaction.fps_transaction_status == 'Success':
                 log.debug('Received IPN for pending status out of order - txn already succeeded.  Ignoring.')
         
@@ -104,6 +108,8 @@ class IpnController(BaseController):
             #  - transaction is already success, log it (duplicate notification?)
             if transaction.fps_transaction_status is None or transaction.fps_transaction_status == 'Pending':
                 transaction.fps_transaction_status = 'Success'
+                if status_code is not None:
+                    transaction.fps_status_code = status_code
                 transaction.success_date = model.now()
                 transaction.donation.pending = False
                 # update buyer name if empty
@@ -112,7 +118,36 @@ class IpnController(BaseController):
                 fb_logic.update_user_fbml_by_wg_userid(transaction.donation.recipient_id)
                 session.commit()
             elif transaction.fps_transaction_status == 'Success':
-                log.debug('Transaction %s is already in Success state. ABT payment or duplicate IPN notification?' % transaction_id)
+                log.info('Transaction %s is already in Success state. ABT payment or duplicate IPN notification?' % transaction_id)
         
+        elif transaction_status.upper() == 'FAILURE':
+            if transaction.fps_transaction_status is None or transaction.fps_transaction_status == 'Pending':
+                # TODO: log more info?
+                transaction.fps_transaction_status = 'Failure'
+                if status_code is not None:
+                    transaction.fps_status_code = status_code
+                # update buyer name if empty
+                if transaction.buyer_name is None and buyer_name is not None:
+                    transaction.buyer_name = buyer_name
+                session.commit()
+            elif transaction.fps_transaction_status == 'Failure' or transaction.fps_transaction_status == 'Cancelled':
+                log.debug('Transaction %s is already in Failure/Cancelled state. Duplicate IPN notification?' % transaction_id)
+            elif transaction.fps_transaction_status == 'Success':
+                log.error('Transaction %s is in Success state.  IPN notification received for FAILURE.  Status code: %s' % (transaction_id, status_code))
+        
+        elif transaction_status.upper() == 'CANCELLED':
+            if transaction.fps_transaction_status is None or transaction.fps_transaction_status == 'Pending':
+                # TODO: log more info?
+                transaction.fps_transaction_status = 'Cancelled'
+                if status_code is not None:
+                    transaction.fps_status_code = status_code
+                # update buyer name if empty
+                if transaction.buyer_name is None and buyer_name is not None:
+                    transaction.buyer_name = buyer_name
+                session.commit()
+            elif transaction.fps_transaction_status == 'Failure' or transaction.fps_transaction_status == 'Cancelled':
+                log.debug('Transaction %s is already in Failure/Cancelled state. Duplicate IPN notification?' % transaction_id)
+            elif transaction.fps_transaction_status == 'Success':
+                log.error('Transaction %s is in Success state.  IPN notification received for CANCELLED.  Status code: %s' % (transaction_id, status_code))
         
         return 'roger that'

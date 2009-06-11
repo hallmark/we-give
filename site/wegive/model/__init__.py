@@ -308,6 +308,7 @@ class Transaction(Base):
     caller_reference = Column(types.String(128), nullable=False)
     fps_transaction_id = Column(types.String(40))
     fps_transaction_status = Column(types.String(16))
+    fps_status_code = Column(types.String(128))
     amount = Column(types.Float)
     recipient_token_id = Column(types.String(128))              # token representing charity
     sender_token_id = Column(types.String(128))                 # token representing donor
