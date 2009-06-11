@@ -127,9 +127,9 @@
     <div id="gift_box">
         <div id="gift_display">
             %if c.recipient_id:
-                <div class="donor_pic"><fb:profile-pic uid="${c.donor_id}" size="q" linked="false" /></div>
+                <div class="donor_pic"><fb:profile-pic uid="${c.donor_id}" size="q" /></div>
                 <div class="gift_content">
-                    From: <span class="donor_name"><fb:name uid="${c.donor_id}" linked="false" capitalize="true" /></span>
+                    From: <span class="donor_name"><fb:name uid="${c.donor_id}" capitalize="true" /></span>
                     <div class="gift_and_message">
                         <div class="gift_image"><img src="${h.gift_image_url(c.donation.gift_id)}" alt="${c.donation.gift.name}"></div>
                         <div class="gift_message">
