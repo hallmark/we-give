@@ -29,23 +29,20 @@
 }
 #gift_store
 {
-    /*border: 1px solid #CCCCCC;
-    float: left;*/
+    /*border: 1px solid #CCCCCC;*/
     background-color: #F7F7F7;
     width: 630px;
     padding: 10px 65px;
 }
 #gifts_display
 {
-    /*float: left;
-    width: 600px;*/
     background-color: #FFFFFF;
     padding: 8px 15px;
     border: 1px solid #DDDDDD;
 }
 #gifts_grid
 {
-    height: 300px;
+    height: 200px;
     padding-left: 2px;
 }
 .gift_container
@@ -137,11 +134,39 @@ a.gift:hover
     margin-left: 27px;
     padding-top: 2px;
 }
+.my_dash_links
+{
+    padding: 0 10px 5px;
+    border-bottom: 1px solid #CCCCCC;
+}
+.my_help_link
+{
+    float: right;
+}
+.my_header
+{
+    padding: 17px 10px 28px;
+}
+.my_header .motto
+{
+    font-size: 87%;
+    color: #888888;
+    font-weight: normal;
+    margin-left: 60px;
+}
 </style>
 
-<fb:dashboard>
-    <fb:help href="help">Help Me!</fb:help>
-</fb:dashboard>
+## My version of fb:dashboard
+<div class="my_dash">
+    <div class="my_dash_links clearfix">
+        <div class="my_help_link">
+            <a href="help">Help Me!</a>
+        </div>
+    </div>
+    <div class="my_header clearfix">
+        <fb:header decoration="no_padding"><fb:application-name linked="false" /> <span class="motto">send a gift to a friend &mdash; send a donation to an exemplary charity</span></fb:header>
+    </div>
+</div>
 
 <fb:if-section-not-added section="profile">
 %if c.just_installed:
