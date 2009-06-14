@@ -34,6 +34,7 @@ import wegive.logic.user as user_logic
 FPS_PROMO_ACTIVE = asbool(config['fps_free_processing_promo_is_active'])
 
 log = logging.getLogger(__name__)
+payment_log = logging.getLogger('payment-processing-event')
 
 def log_fb_request(req):
     buf = 'Facebook request ==============='
@@ -48,6 +49,13 @@ def log_fb_request(req):
     for key,value in req.POST.items():
         buf += '%s: %r\n'%(key, value)
     log.debug(buf)
+#
+def log_payment_event(type, message, donation_id=None, transaction_id=None, caller_ref=None, fps_transaction_id=None, request_id=None, new_status=None):
+    content = '%-4.4s %s %s %s %s %s %s "%s"' % (type, (donation_id or '-'), (transaction_id or '-'),
+                                              (caller_ref or '-'), (fps_transaction_id or '-'), (request_id or '-'),
+                                              (new_status or '-'), message)
+    payment_log.info(content)
+    log.debug(content)
 
 class FacebookcanvasController(BaseController):
     
@@ -249,6 +257,7 @@ class FacebookcanvasController(BaseController):
                                               website_desc='We Give Facebook application')
         
         session.commit()
+        log_payment_event('APP', 'Created donation', donation_id=donation.id, caller_ref=caller_ref, new_status='new')
         
         return render('/facebook/send_gift.tmpl')
 
@@ -299,6 +308,8 @@ class FacebookcanvasController(BaseController):
         donation = meta.Session.query(Donation).get(donation_id)
         if donation is None:
             log.error('Error in return from CBUI: donation information could not be found')
+            log_payment_event('CBUI', 'Donation information could not be found', donation_id=donation_id, caller_ref=caller_reference, new_status='error')
+            
             c.error_msg = 'Gift information could not be found.'
             return render('/facebook/wrap_it_up.tmpl')
         
@@ -330,6 +341,7 @@ class FacebookcanvasController(BaseController):
         
         session.flush()
         donation.transaction_id = transaction.id
+        log_payment_event('CBUI', 'Return from Co-branded pipeline; Created transaction', donation_id=donation.id, transaction_id=transaction.id, caller_ref=caller_reference, new_status='pending')
         
         # invoke Pay operation on Amazon FPS
         fps_response = fps_logic.pay_marketplace(transaction.sender_token_id,
@@ -344,6 +356,7 @@ class FacebookcanvasController(BaseController):
             log.debug("Error from FPS action 'Pay'\nCallerReference: %s\nRequestID: %s\nCode: %s\nMessage: %s" % (caller_reference,fps_response.requestID, fps_error.code, fps_error.message))
             # TODO: depending on whether this condition can be retried, display error to end-user
             # TODO: update transaction and donation entries?
+            log_payment_event('FPS', "Error from FPS action 'Pay': [%s] %s" % (fps_error.code, fps_error.message), donation_id=donation.id, transaction_id=transaction.id, caller_ref=caller_reference, request_id=fps_response.requestID, new_status='failed')
             c.error_msg = 'Payment authorization was not successful.'
             return render('/facebook/wrap_it_up.tmpl')
         
@@ -352,6 +365,7 @@ class FacebookcanvasController(BaseController):
         transaction.fps_transaction_status = fps_response.payResult.transactionStatus
         request_id = fps_response.responseMetadata.requestId
         log.debug("Pay transaction status: %s, RequestID: %s" % (transaction.fps_transaction_status, request_id))
+        log_payment_event('FPS', "Invoked FPS action 'Pay'", donation_id=donation.id, transaction_id=transaction.id, caller_ref=caller_reference, fps_transaction_id=transaction.fps_transaction_id, request_id=request_id, new_status=transaction.fps_transaction_status)
         
         if transaction.fps_transaction_status == 'Success':
             transaction.success_date = model.now()

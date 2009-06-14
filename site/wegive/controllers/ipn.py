@@ -20,6 +20,7 @@ from wegive.model import Transaction
 import wegive.logic.facebook_platform as fb_logic
 
 log = logging.getLogger(__name__)
+payment_log = logging.getLogger('payment-processing-event')
 
 def log_ipn_notification(req):
     buf = '\n\n= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='
@@ -35,6 +36,13 @@ def log_ipn_notification(req):
     for key,value in req.POST.items():
         buf += '%s: %r\n'%(key, value)
     log.debug(buf)
+
+def log_payment_event(type, message, donation_id=None, transaction_id=None, caller_ref=None, fps_transaction_id=None, request_id=None, new_status=None):
+    content = '%-4.4s %s %s %s %s %s %s "%s"' % (type, (donation_id or '-'), (transaction_id or '-'),
+                                              (caller_ref or '-'), (fps_transaction_id or '-'), (request_id or '-'),
+                                              (new_status or '-'), message)
+    payment_log.info(content)
+    log.debug(content)
 
 class IpnController(BaseController):
     
@@ -57,6 +65,8 @@ class IpnController(BaseController):
         log.debug('FPS sig: ' + sig);
         
         if not self.fps_client.validate_pipeline_signature(sig, None, parameters):
+            transaction_id = request.POST.get('transactionId')
+            log_payment_event('IPN', "Invalid signature", fps_transaction_id=transaction_id, new_status='error')
             return("invalid signature")
         
         transaction_status = request.POST.get('transactionStatus')
@@ -71,6 +81,7 @@ class IpnController(BaseController):
         
         status_code = request.POST.get('statusCode')
         buyer_name = request.POST.get('buyerName')
+        caller_reference = request.POST.get('callerReference')
         
         # look up transaction in DB
         session = meta.Session()
@@ -78,8 +89,11 @@ class IpnController(BaseController):
         transaction = txn_q.with_lockmode('update').filter_by(fps_transaction_id=transaction_id).first()  # TODO: use one() and catch exceptions?
         if transaction is None:
             log.error('Transaction %s could not be found in DB' % transaction_id)
+            log_payment_event('IPN', "Transaction could not be found in DB", fps_transaction_id=transaction_id, new_status='error')
             # TODO: record detailed info in case DB insert was not committed before IPN was received!
             return('transaction info not found')
+        
+        log_payment_event('IPN', "Notification received", fps_transaction_id=transaction_id, donation_id=transaction.donation.id, transaction_id=transaction.id, caller_ref=caller_reference, new_status=status_code)
         
         if transaction_status.upper() == 'PENDING':
             # if status is pending, look up transaction in DB.
