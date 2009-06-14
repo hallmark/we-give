@@ -49,9 +49,9 @@ class User(Base):
     address_id = Column(types.Integer, ForeignKey("wg_address.id"))
     created = Column(types.DateTime(), default=now)
     
-    received_gifts = orm.relation("Donation", primaryjoin="(Donation.recipient_id==User.id) & (Donation.pending==False)",
+    received_gifts = orm.relation("Donation", primaryjoin="(Donation.recipient_id==User.id) & (Donation.delivered==True)",
                                   order_by="desc(Donation.given_date)", backref="recipient")
-    sent_gifts = orm.relation("Donation", primaryjoin="(Donation.donor_id==User.id) & (Donation.pending==False)",
+    sent_gifts = orm.relation("Donation", primaryjoin="(Donation.donor_id==User.id) & (Donation.delivered==True)",
                                   order_by="desc(Donation.given_date)", backref="donor")
     address = orm.relation("Address", primaryjoin="User.address_id==Address.id", uselist=False)
     personas = orm.relation("UserPersona", backref="user")
@@ -275,14 +275,17 @@ class Donation(Base):
     gift_id = Column(types.Integer, ForeignKey("wg_gift.id"), nullable=False)
     charity_id = Column(types.Integer, ForeignKey("wg_charity.id"), nullable=False)
     message = Column(types.UnicodeText)
-    privacy = Column(types.CHAR(1))
-    pending = Column(types.Boolean, default=True)
-    #transaction_id = Column(types.Integer, ForeignKey("wg_transaction.id"))
+    privacy = Column(types.CHAR(1), default='p', nullable=False)  # Values: 'p' public, 'v' private
+    delivered = Column(types.Boolean, default=False, nullable=False)
+    # Allow donation to be in failed state -  so that user can retry payment
+    # E.g. 'not initiated', 'pending', 'paid', 'failed', 'cancelled', 'refunded'?
+    transaction_status = Column(types.String(20), default='not initiated', nullable=False)
     given_date = Column(types.DateTime, default=now)
-    # designation = Column(types.Integer, ForeignKey("program.id"))  # i.e. earmark
-    # tracking_code = Column(types.String(64))
+    designation_id = Column(types.Integer, ForeignKey("wg_program.id"))  # i.e. earmark
+    tracking_code = Column(types.String(64))  # i.e. for tracking referrals to We Give
     
-    transaction = orm.relation("Transaction", uselist=False, backref='donation')
+    # can be associated with multiple transactions if first transaction fails
+    transactions = orm.relation("Transaction", order_by="Transaction.created", backref='donation')
     
     def __init__(self, donor_id, recipient_id, amount, gift_id, charity_id):
         self.donor_id = donor_id
@@ -290,7 +293,7 @@ class Donation(Base):
         self.amount = amount
         self.gift_id = gift_id
         self.charity_id = charity_id
-        self.pending = True
+        self.delivered = False
     
     def __repr__(self):
         return "<Donation(donor<%d>, recipient<%d>, $%.2f)>" % (self.donor_id, self.recipient_id, self.amount)

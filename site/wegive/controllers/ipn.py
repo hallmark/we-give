@@ -75,7 +75,7 @@ class IpnController(BaseController):
         # look up transaction in DB
         session = meta.Session()
         txn_q = meta.Session.query(Transaction)
-        transaction = txn_q.filter_by(fps_transaction_id=transaction_id).first()  # TODO: use one() and catch exceptions?
+        transaction = txn_q.with_lockmode('update').filter_by(fps_transaction_id=transaction_id).first()  # TODO: use one() and catch exceptions?
         if transaction is None:
             log.error('Transaction %s could not be found in DB' % transaction_id)
             # TODO: record detailed info in case DB insert was not committed before IPN was received!
@@ -111,7 +111,8 @@ class IpnController(BaseController):
                 if status_code is not None:
                     transaction.fps_status_code = status_code
                 transaction.success_date = model.now()
-                transaction.donation.pending = False
+                transaction.donation.delivered = True
+                transaction.donation.transaction_status = 'paid'
                 # update buyer name if empty
                 if transaction.buyer_name is None and buyer_name is not None:
                     transaction.buyer_name = buyer_name
@@ -124,6 +125,7 @@ class IpnController(BaseController):
             if transaction.fps_transaction_status is None or transaction.fps_transaction_status == 'Pending':
                 # TODO: log more info?
                 transaction.fps_transaction_status = 'Failure'
+                transaction.donation.transaction_status = 'failed'
                 if status_code is not None:
                     transaction.fps_status_code = status_code
                 # update buyer name if empty
@@ -139,6 +141,8 @@ class IpnController(BaseController):
             if transaction.fps_transaction_status is None or transaction.fps_transaction_status == 'Pending':
                 # TODO: log more info?
                 transaction.fps_transaction_status = 'Cancelled'
+                transaction.donation.transaction_status = 'cancelled'
+                # TODO: do we need to "undeliver" the gift if a user cancels a payment after it went through?
                 if status_code is not None:
                     transaction.fps_status_code = status_code
                 # update buyer name if empty

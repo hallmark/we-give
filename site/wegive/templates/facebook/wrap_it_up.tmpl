@@ -141,15 +141,21 @@
     <div class="gift_store_row">
         When the payment is confirmed, your gift to <fb:name uid="${c.recipient_fb_uid}" firstnameonly="true" reflexive="true" /> will be delivered to <fb:pronoun uid="${c.recipient_fb_uid}" possessive="true" /> profile box.
     </div>
-    %endif
-    %if c.pay_status == 'Success':
+    %elif c.pay_status == 'Success':
     <div class="gift_store_row">
         Your gift to <fb:name uid="${c.recipient_fb_uid}" firstnameonly="true" reflexive="true" /> has been delivered to <fb:pronoun uid="${c.recipient_fb_uid}" possessive="true" /> profile box.
     </div>
-    %endif
+    %elif c.pay_status == 'Failure':
     <div class="gift_store_row">
-        On behalf of <a href="${c.donation.charity.url}" title="Go to ${c.donation.charity.name}'s website" target="_blank">${c.donation.charity.name}</a>, thank you for your donation!
+        You will need to retry your donation through Amazon Payments so that we can send your meaningful gift to <fb:name uid="${c.recipient_fb_uid}" firstnameonly="true" reflexive="true" />.
     </div>
+    %endif
+    
+    %if c.pay_status == 'Pending' or c.pay_status == 'Success':
+    <div class="gift_store_row">
+        On behalf of <a href="${c.donation.charity.url}" title="Go to ${c.donation.charity.name}'s website" target="_blank">${c.donation.charity.name}</a>, thank you for your tax-deductible donation!
+    </div>
+    %endif
     
     <%
         content = """I just sent you a meaningful donation gift through We Give, benefitting %s.

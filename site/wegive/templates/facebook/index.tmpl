@@ -266,7 +266,7 @@ a.gift:hover
         else if (!isValidAmount(params.amount))
         {
             var context = document.getElementById('gift_amount');
-            var msg = "Please specify a valid amount for the donation.";
+            var msg = "Please specify a valid amount for the donation ($1 or more).";
             displayError("Error", msg, context);
             return false;
         }

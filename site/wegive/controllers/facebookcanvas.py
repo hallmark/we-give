@@ -292,9 +292,22 @@ class FacebookcanvasController(BaseController):
             c.error_msg = 'Gift information could not be found.'
             return render('/facebook/wrap_it_up.tmpl')
         
-        # TODO: check if donation already has an associated 'Pay' transaction.
-        #       This may be the case if a user refreshes the page or revisits it using the Back button
-        
+        # Check if donation already has an associated transaction.  TODO: make sure it's a 'Pay' transaction?
+        # This may be the case if a user refreshes the page or revisits it using the Back button
+        if len(donation.transactions) != 0:
+            log.debug('Found %d existing transactions for donation %d.' % (len(donation.transactions), donation.id))
+            
+            # retrieve the last transaction created
+            transaction = donation.transactions[-1]
+            log.debug('Last transaction for donation %d:\n%d\t%s\t%s\n%s\t%s\t%s' % (donation.id, transaction.id, transaction.fps_action, transaction.caller_reference, transaction.fps_transaction_id, transaction.fps_transaction_status, transaction.fps_status_code))
+            
+            c.donation = donation
+            c.recipient_fb_uid = user_logic.get_network_uid(session, donation.recipient_id)
+            c.payment_method = transaction.payment_method
+            c.pay_status = transaction.fps_transaction_status
+
+            return render('/facebook/wrap_it_up.tmpl')
+            
         transaction = Transaction('Pay',donation.id, caller_reference)
         transaction.amount = donation.amount
         transaction.recipient_token_id = donation.charity.recipient_token_id
@@ -317,6 +330,7 @@ class FacebookcanvasController(BaseController):
             fps_error = fps_response.errors.error
             log.debug("Error from FPS action 'Pay'\nCallerReference: %s\nRequestID: %s\nCode: %s\nMessage: %s" % (caller_reference,fps_response.requestID, fps_error.code, fps_error.message))
             # TODO: depending on whether this condition can be retried, display error to end-user
+            # TODO: update transaction and donation entries?
             c.error_msg = 'Payment authorization was not successful.'
             return render('/facebook/wrap_it_up.tmpl')
         
@@ -328,12 +342,20 @@ class FacebookcanvasController(BaseController):
         
         if transaction.fps_transaction_status == 'Success':
             transaction.success_date = model.now()
+            donation.transaction_status = 'paid'
         elif transaction.fps_transaction_status == 'Pending':
             transaction.last_attempt_date = model.now()
+            donation.transaction_status = 'pending'
+        elif transaction.fps_transaction_status == 'Failure':
+            # TODO: handle more stuff here??
+            donation.transaction_status = 'failed'
         
-        # if 'Pay' operation succeeded, update donation and user profile FBML
+        # If 'Pay' operation succeeded, update donation and user profile FBML
+        # This should only happen for Amazon balance transfers (ABT).  Other
+        # payment methods require verification and start in 'Pending' status.
         if transaction.fps_transaction_status == 'Success':
-            donation.pending = False
+            donation.delivered = True
+            donation.transaction_status = 'paid'
             session.flush()
             fb_logic.update_user_fbml_by_wg_userid(donation.recipient_id)
         
