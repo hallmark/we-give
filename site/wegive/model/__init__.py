@@ -130,7 +130,9 @@ class Charity(Base):
     short_code = Column(types.String(10), nullable=False)
     address_id = Column(types.Integer, ForeignKey("wg_address.id"))
     url = Column(types.Unicode(255))
+    is_501c3 = Column(types.Boolean, default=True, nullable=False)
     recipient_token_id = Column(types.String(128))
+    promo_recipient_token_id = Column(types.String(128))  # 'caller pays' recipient token for free processing promo
     created = Column(types.DateTime(), default=now)
     
     address = orm.relation("Address", primaryjoin="Charity.address_id==Address.id", uselist=False)

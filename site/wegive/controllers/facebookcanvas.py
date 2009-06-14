@@ -14,6 +14,7 @@ import logging
 from pylons import request, response, session, tmpl_context as c
 from pylons.controllers.util import abort, redirect_to
 from pylons import config, app_globals
+from paste.deploy.converters import asbool
 
 from facebook import FacebookError
 from facebook.wsgi import facebook
@@ -29,6 +30,8 @@ from wegive.model import Charity, Donation, Gift, User, UserPersona, SocialNetwo
 import wegive.logic.facebook_platform as fb_logic
 import wegive.logic.payments as fps_logic
 import wegive.logic.user as user_logic
+
+FPS_PROMO_ACTIVE = asbool(config['fps_free_processing_promo_is_active'])
 
 log = logging.getLogger(__name__)
 
@@ -136,7 +139,10 @@ class FacebookcanvasController(BaseController):
         c.gifts = gift_q.filter_by(for_sale=True).order_by(Gift.created)[:15]
         
         # get list of charities that have registered thru CBUI as payment recipients
-        c.charities = charity_q.filter(Charity.recipient_token_id != None).order_by(Charity.created)
+        if FPS_PROMO_ACTIVE:
+            c.charities = charity_q.filter(Charity.promo_recipient_token_id != None).order_by(Charity.created)
+        else:
+            c.charities = charity_q.filter(Charity.recipient_token_id != None).order_by(Charity.created)
         log.debug('time for all DB calls: %.3f ms' % ((time.time() - start)*1000.0))
         
         c.form_uuid = uuid.uuid1().hex
@@ -232,10 +238,14 @@ class FacebookcanvasController(BaseController):
         # compute parameters for request to Co-Branded FPS pages
         caller_ref = 'wgdonation_%d_%s' % (donation.id, uuid.uuid1().hex)
         reason = 'Donation to %s' % charity.name
+        if FPS_PROMO_ACTIVE:
+            recipient_token = charity.promo_recipient_token_id
+        else:
+            recipient_token = charity.recipient_token_id
         c.direct_url = fps_logic.get_cbui_url(caller_ref,
                                               reason,
                                               c.donation_amt,
-                                              recipient_token=charity.recipient_token_id,
+                                              recipient_token=recipient_token,
                                               website_desc='We Give Facebook application')
         
         session.commit()
@@ -310,7 +320,10 @@ class FacebookcanvasController(BaseController):
             
         transaction = Transaction('Pay',donation.id, caller_reference)
         transaction.amount = donation.amount
-        transaction.recipient_token_id = donation.charity.recipient_token_id
+        if FPS_PROMO_ACTIVE:
+            transaction.recipient_token_id = donation.charity.promo_recipient_token_id
+        else:
+            transaction.recipient_token_id = donation.charity.recipient_token_id
         transaction.sender_token_id = request.params.get('tokenID')
         transaction.payment_method = {'SA':'ABT', 'SB':'ACH', 'SC':'CC'}[status]
         session.add(transaction)
