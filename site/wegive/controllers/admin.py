@@ -54,6 +54,9 @@ class AdminController(BaseController):
     def index(self):
         return render('/web/admin/index.tmpl')
 
+    def exclude_ga(self):
+        return render('/web/admin/exclude_ga.tmpl')
+
     def users(self):
         from wegive.model import meta
         session = meta.Session()

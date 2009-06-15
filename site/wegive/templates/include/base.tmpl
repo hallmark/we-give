@@ -12,7 +12,7 @@
     <title>${self.title()}</title>
     ${self.head()}
 </head>
-<body>
+<body${self.body_attr()}>
     ${self.header()}
     ${next.body()}
     ${self.footer()}
@@ -24,7 +24,8 @@
 <%def name="head()">
     ${h.stylesheet_link(h.url_for('/css/main.css'))}
 </%def>
-<%def name="header()"><div id="header"><img src="wgtf-banner.png" alt="We Give to Friends"></div></%def>
+<%def name="body_attr()"></%def>
+<%def name="header()"><div id="header"><img src="/wgtf-banner.png" alt="We Give to Friends"></div></%def>
 <%def name="footer()"><div id="footer">Copyright 2009 &copy; We Give Foundation. All rights reserved.</div></%def>
 <%def name="tracker()">
     <script type="text/javascript">

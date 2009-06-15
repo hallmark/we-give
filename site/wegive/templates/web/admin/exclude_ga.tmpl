@@ -1,0 +1,29 @@
+## -*- coding: utf-8 -*-
+##
+## All portions of the code written by Mark Ture are Copyright (c) 2009
+## Mark Ture. All rights reserved.
+##############################################################################
+<%inherit file="/include/base.tmpl"/>
+
+<%def name="title()">We Give | Exclude Browser from Google Analytics</%def>
+<%def name="head()">
+    ${parent.head()}
+    <!-- play with CSS here -->
+    <style type="text/css">
+        .foo
+        {
+            color: red;
+        }
+    </style>
+</%def>
+<%def name="body_attr()"> onLoad="javascript:pageTracker._setVar('no_ga');"</%def>
+
+    <div class="content">
+        <h3>Exclude Browser from Google Analytics</h3>
+        <p>
+            Your browser has been excluded from being tracked by Google Analytics.
+        </p>
+        <p>
+            Thank you.
+        </p>
+    </div>
