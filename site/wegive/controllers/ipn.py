@@ -10,7 +10,10 @@ import logging
 
 from pylons import request, response, session, tmpl_context as c
 from pylons.controllers.util import abort, redirect_to
-from pylons import config, app_globals
+from pylons import config, app_globals as g
+
+from facebook import FacebookError
+from facebook.wsgi import facebook
 
 from wegive.lib.base import BaseController, render
 
@@ -18,6 +21,7 @@ import wegive.model as model
 import wegive.model.meta as meta
 from wegive.model import Transaction
 import wegive.logic.facebook_platform as fb_logic
+import wegive.logic.user as user_logic
 
 log = logging.getLogger(__name__)
 payment_log = logging.getLogger('payment-processing-event')
@@ -47,7 +51,7 @@ def log_payment_event(type, message, donation_id=None, transaction_id=None, call
 class IpnController(BaseController):
     
     def __init__(self):
-        self.fps_client = app_globals.fps_client
+        self.fps_client = g.fps_client
 
     def process_ipn(self):
         log_ipn_notification(request)
@@ -131,7 +135,28 @@ class IpnController(BaseController):
                 if transaction.buyer_name is None and buyer_name is not None:
                     transaction.buyer_name = buyer_name
                 fb_logic.update_user_fbml_by_wg_userid(transaction.donation.recipient_id)
+                # stash some info for the feed entry
+                donor_fb_uid = user_logic.get_network_uid(session, transaction.donation.donor_id)
+                recipient_fb_uid = user_logic.get_network_uid(session, transaction.donation.recipient_id)
+                donation_id = transaction.donation.id
+                gift_name = transaction.donation.gift.name
+                charity_name = transaction.donation.charity.name
                 session.commit()
+                
+                # try to send feed update
+                user_session_mkey = "User-fb-sk.%s" % donor_fb_uid
+                session_key = g.mc.get(user_session_mkey)
+                if session_key:
+                    log.debug('going to publish feed item, user session: %s' % session_key)
+                    # publish feed item
+                    facebook.api_client.user = donor_fb_uid
+                    facebook.api_client.session_key = session_key
+                    fb_logic.publish_feed_item(donor_fb_uid, recipient_fb_uid,
+                                               donation_id, gift_name,
+                                               charity_name)
+                else:
+                    log.debug('unable to find user session key in memcached')
+                
             elif transaction.fps_transaction_status == 'Success':
                 log.info('Transaction %s is already in Success state. ABT payment or duplicate IPN notification?' % transaction_id)
         

@@ -155,8 +155,10 @@ class FacebookcanvasController(BaseController):
         else:
             gift_q = meta.Session.query(Gift)
             c.gifts = gift_q.filter_by(for_sale=True).order_by(Gift.created)[:15]
-            g.mc.set(gifts_mkey, c.gifts, time=86400)
-            log.debug('stored gifts in memcached!')
+            if g.mc.set(gifts_mkey, c.gifts, time=86400):
+                log.debug('stored gifts in memcached!')
+            else:
+                log.debug('unable to store gifts in memcached.  make sure memcached server is running!')
         
         # get list of charities that have registered thru CBUI as payment recipients
         charities_mkey = 'Cols.active-charities'
@@ -172,8 +174,10 @@ class FacebookcanvasController(BaseController):
                 c.charities = charity_q.filter(Charity.promo_recipient_token_id != None).order_by(Charity.created).all()
             else:
                 c.charities = charity_q.filter(Charity.recipient_token_id != None).order_by(Charity.created).all()
-            g.mc.set(charities_mkey, c.charities, time=86400)
-            log.debug('stored charities in memcached!')
+            if g.mc.set(charities_mkey, c.charities, time=86400):
+                log.debug('stored charities in memcached!')
+            else:
+                log.debug('unable to store charities in memcached.  make sure memcached server is running!')
         
         log.debug('time for all DB calls: %.3f ms' % ((time.time() - start)*1000.0))
         
@@ -389,6 +393,23 @@ class FacebookcanvasController(BaseController):
             donation.transaction_status = 'paid'
             session.flush()
             fb_logic.update_user_fbml_by_wg_userid(donation.recipient_id)
+            
+            donor_fb_uid = user_logic.get_network_uid(session, donation.donor_id)
+            if donor_fb_uid == 1004760:
+                log.debug('not publishing feed item for facebook user mark.ture')
+            else:
+                fb_logic.publish_feed_item(donor_fb_uid, c.recipient_fb_uid,
+                                           donation.id, donation.gift.name,
+                                           donation.charity.name)
+        else:
+            # save user session info in memcached to be used when IPN is received
+            log.debug('Saving Facebook session info in memcached: user %s, session_key %s' % (facebook.api_client.user,
+                                                                                              facebook.api_client.session_key))
+            user_session_mkey = "User-fb-sk.%s" % facebook.api_client.user.encode('ascii', 'xmlcharrefreplace')
+            if g.mc.set(user_session_mkey, facebook.api_client.session_key, time=3600):
+                log.debug('session info saved for 1 hr')
+            else:
+                log.debug('unable to save FB session in memcached!')
         
         session.commit()
         
@@ -396,9 +417,6 @@ class FacebookcanvasController(BaseController):
         c.recipient_fb_uid = user_logic.get_network_uid(session, donation.recipient_id)
         c.payment_method = transaction.payment_method
         c.pay_status = transaction.fps_transaction_status
-        
-        donor_fb_uid = user_logic.get_network_uid(session, donation.donor_id)
-        fb_logic.publish_feed_item(donor_fb_uid, c.recipient_fb_uid, donation.id, donation.gift.name, donation.charity.name)
         
         return render('/facebook/wrap_it_up.tmpl')
 
