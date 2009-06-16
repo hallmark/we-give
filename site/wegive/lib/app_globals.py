@@ -4,8 +4,11 @@
 # Mark Ture. All rights reserved.
 ##############################################################################
 from pylons import config
+from paste.deploy.converters import aslist
 
 import fpys
+import memcache
+
 
 """The application's Globals object"""
 
@@ -20,6 +23,9 @@ class Globals(object):
         'app_globals' variable
 
         """
+        memcached_servers = aslist(config['memcached_servers'])
+        self.mc = memcache.Client(memcached_servers, debug=0)
+        
         self.fps_client = fpys.FlexiblePaymentClient(config['AWS_KEY_ID'],
                                                      config['AWS_SECRET_KEY'],
                                                      fps_url=config['fps_api_url'],

@@ -35,8 +35,8 @@ def make_map():
     map.connect('/fps/ipn', controller='ipn', action='process_ipn')
     map.connect('/{action}', controller='hub_site')
     map.connect('/', controller='hub_site', action='index')
-    map.connect('/admin/{action}', controller='admin')
-    map.connect('/admin/', controller='admin', action='index')
+    map.connect('/wgadmin/{action}', controller='admin')
+    map.connect('/wgadmin/', controller='admin', action='index')
 
     map.connect('/{controller}/{action}')
     map.connect('/{controller}/{action}/{id}')

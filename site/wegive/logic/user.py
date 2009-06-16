@@ -11,7 +11,7 @@ import logging
 from pylons import config, app_globals
 
 import wegive.model.meta as meta
-from wegive.model import Charity, Donation, Gift, User, UserPersona, SocialNetwork, Transaction
+from wegive.model import User, UserPersona, SocialNetwork
 
 log = logging.getLogger(__name__)
 
@@ -33,3 +33,17 @@ def get_network_uid(session, user_id, network_name=u'Facebook'):
         return up.network_user_id
     else:
         return None
+
+def get_fb_userpersona(session, fb_uid, create_if_missing=False):
+    fb_network = meta.Session.query(SocialNetwork).filter_by(name=u'Facebook').one()
+    
+    userpersona_q = meta.Session.query(UserPersona)
+    fb_userpersona = userpersona_q.filter_by(network_user_id=fb_uid).filter_by(network_id=fb_network.id).first()
+    if create_if_missing and fb_userpersona is None:
+        new_user = User()
+        session.add(new_user)
+        session.flush()
+        fb_userpersona = UserPersona(new_user.id, fb_network.id, fb_uid)
+        session.add(fb_userpersona)
+    
+    return fb_userpersona

@@ -16,6 +16,10 @@ from facebook import FacebookError
 from facebook.wsgi import facebook
 
 from wegive.lib.base import BaseController, render
+import wegive.logic.facebook_platform as fb_logic
+import wegive.logic.user as user_logic
+import wegive.model.meta as meta
+from wegive.model import Charity, Donation, Gift, User, UserPersona,
 #from wegive import model
 
 log = logging.getLogger(__name__)
@@ -41,9 +45,20 @@ class FacebookappController(BaseController):
         
         facebook.process_request()
         if facebook.user:
-            log.debug('user: %s' % facebook.user)
             log.debug('Authorized new user for We Give, user: %s' % facebook.user)
-            # TODO: update row in UserPersona table
+            
+            # Update/create row in UserPersona table and set is_app_user to True
+            session = meta.Session()
+            fb_user = user_logic.get_fb_userpersona(session, facebook.user, create_if_missing=True)
+            fb_user.is_app_user = True
+            
+            if not fb_logic.has_profile_fbml(facebook.user):
+                ALLOW_FBML_INIT_ON_AUTHORIZE = True
+                if ALLOW_FBML_INIT_ON_AUTHORIZE:
+                    fb_logic.update_user_fbml_by_userpersona(fb_user)
+                else:
+                    log.debug("Updating profile FBML on app authorize is currently de-fanged, so that handling users w/o FBML can be properly tested!")
+            session.commit()
         
         """
         if facebook.check_session():
@@ -65,9 +80,14 @@ class FacebookappController(BaseController):
         
         facebook.process_request()
         if facebook.user:
-            log.debug('user: %s' % facebook.user)
             log.debug('Removing user with uid: %s' % facebook.user)
-            # TODO: update row in UserPersona table
+            
+            # Update row in UserPersona table
+            session = meta.Session()
+            fb_user = user_logic.get_fb_userpersona(session, facebook.user)
+            if fb_user:
+                fb_user.is_app_user = False
+                session.commit()
         
         """
         if facebook.check_session():

@@ -13,7 +13,7 @@ import logging
 
 from pylons import request, response, session, tmpl_context as c
 from pylons.controllers.util import abort, redirect_to
-from pylons import config, app_globals
+from pylons import config, app_globals as g
 from paste.deploy.converters import asbool
 
 from facebook import FacebookError
@@ -60,7 +60,7 @@ def log_payment_event(type, message, donation_id=None, transaction_id=None, call
 class FacebookcanvasController(BaseController):
     
     def __init__(self):
-        self.fps_client = app_globals.fps_client
+        self.fps_client = g.fps_client
     
     def __before__(self):
         c.facebook = facebook
@@ -97,31 +97,30 @@ class FacebookcanvasController(BaseController):
         
         if current_user:
             start = time.time()
-            # TODO: need to handle "URLError: urlopen error" exceptions thrown from api calls
+
             """ Removing unnecessary Facebook API calls
+            # TODO: need to handle "URLError: urlopen error" exceptions thrown from api calls
             info = facebook.api_client.users.getInfo([current_user], ['name', 'first_name', 'last_name', 'pic_square', 'locale'])[0]
             log.debug('name: %s, pic: %s, locale: %s' % (info['name'], info['pic_square'], info['locale']) )
             friends = facebook.api_client.friends.get(uid=current_user)
             friends = facebook.api_client.users.getInfo(friends, ['uid', 'name', 'pic_square', 'locale'])
             c.friends = friends
-            """
             log.debug('time to make facebook API calls: %.3f ms' % ((time.time() - start)*1000.0))
+            """
             
-            
-            # look up current_user in UserPersona table
-            # if exists:
-            #   - update 'added_wg' status?
-            # if not exists:
-            #   - add new row in User table (even if it ends up being a dummy)
-            #   - add new row (network_user_id, added_wg)
-            #
             # TODO: we cannot store the first_name, last_name - the user needs to provide it to us
             # TODO: need a way to map existing Users to Facebook users
             
             start = time.time()
             session = meta.Session()
             
-            fb_user = self._get_fb_userpersona(session, current_user, create_if_missing=True)
+            # Look up current_user in UserPersona table
+            #   if exists:
+            #     - update 'is_app_user' status?
+            #   if not exists:
+            #     - add new row in User table (even if it ends up being a dummy)
+            #     - add new row in UserPersona table
+            fb_user = user_logic.get_fb_userpersona(session, current_user, create_if_missing=True)
             
             # update is_app_user if persisted value is inaccurate
             if fb_user.is_app_user != facebook.api_client.added:
@@ -132,56 +131,61 @@ class FacebookcanvasController(BaseController):
             if c.just_installed:
                 c.gift_count = len(fb_user.user.received_gifts)
             
-            if fb_user.is_app_user and not fb_logic.has_profile_fbml(current_user):
-                ALLOW_FBML_INIT_ON_FIRST_VISIT = True
-                if ALLOW_FBML_INIT_ON_FIRST_VISIT:
-                    fb_logic.update_user_fbml_by_userpersona(fb_user)
-                else:
-                    log.debug("Updating profile FBML on canvas-page views is currently de-fanged, so that I can properly test handling users w/o FBML!")
+                fbml_start = time.time()
+                if fb_user.is_app_user and not fb_logic.has_profile_fbml(current_user):
+                    ALLOW_FBML_INIT_ON_FIRST_VISIT = True
+                    if ALLOW_FBML_INIT_ON_FIRST_VISIT:
+                        fb_logic.update_user_fbml_by_userpersona(fb_user)
+                    else:
+                        log.debug("Updating profile FBML on canvas-page views is currently de-fanged, so that I can properly test handling users w/o FBML!")
             
+                log.debug('time for has_profile_fbml call: %.3f ms' % ((time.time() - fbml_start)*1000.0))
+            
+            # will commit new user if call to get_fb_userpersona added row
             session.commit()
         
         # query DB for list of gifts
-        gift_q = meta.Session.query(Gift)
-        charity_q = meta.Session.query(Charity)
-        c.gifts = gift_q.filter_by(for_sale=True).order_by(Gift.created)[:15]
+        gifts_mkey = 'Cols.gifts-page1'
+        mc_start = time.time()
+        gifts = g.mc.get(gifts_mkey)
+        log.debug('time for memcached calls: %.3f ms' % ((time.time() - mc_start)*1000.0))
+        if gifts:
+            log.debug('got gifts from memcached!')
+            c.gifts = gifts
+        else:
+            gift_q = meta.Session.query(Gift)
+            c.gifts = gift_q.filter_by(for_sale=True).order_by(Gift.created)[:15]
+            g.mc.set(gifts_mkey, c.gifts, time=86400)
+            log.debug('stored gifts in memcached!')
         
         # get list of charities that have registered thru CBUI as payment recipients
-        if FPS_PROMO_ACTIVE:
-            c.charities = charity_q.filter(Charity.promo_recipient_token_id != None).order_by(Charity.created)
+        charities_mkey = 'Cols.active-charities'
+        mc_start = time.time()
+        charities = g.mc.get(charities_mkey)
+        log.debug('time for memcached calls: %.3f ms' % ((time.time() - mc_start)*1000.0))
+        if charities:
+            log.debug('got charities from memcached!')
+            c.charities = charities
         else:
-            c.charities = charity_q.filter(Charity.recipient_token_id != None).order_by(Charity.created)
+            charity_q = meta.Session.query(Charity)
+            if FPS_PROMO_ACTIVE:
+                c.charities = charity_q.filter(Charity.promo_recipient_token_id != None).order_by(Charity.created).all()
+            else:
+                c.charities = charity_q.filter(Charity.recipient_token_id != None).order_by(Charity.created).all()
+            g.mc.set(charities_mkey, c.charities, time=86400)
+            log.debug('stored charities in memcached!')
+        
         log.debug('time for all DB calls: %.3f ms' % ((time.time() - start)*1000.0))
         
         c.form_uuid = uuid.uuid1().hex
-        
-        # URL for a gift:
-        # images.wegivetofriends.org/dev/gifts/[id].png
         
         # for (offset, item) in enumerate(c.gifts):
         #    do something on item and offset
         # or: list comprehension: [c * i for (i, c) in enumerate(c.gifts)]
         
-        
-        # TODO: template should know if user has added app - don't render 'Received' / 'Sent' tabs for non-app users
-        
         log.debug('total time: %.3f ms' % ((time.time() - realstart)*1000.0))
         
         return render('/facebook/index.tmpl')
-
-    def _get_fb_userpersona(self, session, fb_uid, create_if_missing=False):
-        fb_network = meta.Session.query(SocialNetwork).filter_by(name=u'Facebook').one()
-        
-        userpersona_q = meta.Session.query(UserPersona)
-        fb_userpersona = userpersona_q.filter_by(network_user_id=fb_uid).filter_by(network_id=fb_network.id).first()
-        if create_if_missing and fb_userpersona is None:
-            new_user = User()
-            session.add(new_user)
-            session.flush()
-            fb_userpersona = UserPersona(new_user.id, fb_network.id, fb_uid)
-            session.add(fb_userpersona)
-        
-        return fb_userpersona
 
     def send_gift(self):
         """Render gift preview for user to review and then click 'Continue with donation'"""
@@ -200,7 +204,7 @@ class FacebookcanvasController(BaseController):
         
         session = meta.Session()
         
-        fb_user = self._get_fb_userpersona(session, current_user)
+        fb_user = user_logic.get_fb_userpersona(session, current_user)
         if fb_user is None:
             # TODO: make sure use has added app
             # TODO: make sure user exists
@@ -216,13 +220,13 @@ class FacebookcanvasController(BaseController):
         c.donation_amt = request.params.get('amount','1.00')
         
         form_uuid = request.params.get('uuid')
-        # TODO: store & lookup uuid in memcache, to see if user is resubmitting form.  at least log the UUID.
+        # TODO: store & lookup uuid in memcached, to see if user is resubmitting form.  at least log the UUID.
 
         if c.recipient_id:
             recipient_info = facebook.api_client.users.getInfo([c.recipient_id], ['name', 'pic_square', 'locale'])[0]
             log.debug('recipient name: %s, pic: %s, locale: %s' % (recipient_info['name'], recipient_info['pic_square'], recipient_info['locale']) )
             
-            recipient_userpersona = self._get_fb_userpersona(session, c.recipient_id, create_if_missing=True)
+            recipient_userpersona = user_logic.get_fb_userpersona(session, c.recipient_id, create_if_missing=True)
         
         gift_q = meta.Session.query(Gift)
         charity_q = meta.Session.query(Charity)
@@ -393,6 +397,9 @@ class FacebookcanvasController(BaseController):
         c.payment_method = transaction.payment_method
         c.pay_status = transaction.fps_transaction_status
         
+        donor_fb_uid = user_logic.get_network_uid(session, donation.donor_id)
+        fb_logic.publish_feed_item(donor_fb_uid, c.recipient_fb_uid, donation.id, donation.gift.name, donation.charity.name)
+        
         return render('/facebook/wrap_it_up.tmpl')
 
     def invite_sent(self):
@@ -415,7 +422,7 @@ class FacebookcanvasController(BaseController):
         
         session = meta.Session()
         
-        fb_user = self._get_fb_userpersona(session, c.recipient_id)
+        fb_user = user_logic.get_fb_userpersona(session, c.recipient_id)
         if fb_user is None or fb_user.user is None:
             c.error_msg = 'Unable to retrieve user of gifts.'
             return(c.error_msg)
@@ -444,7 +451,7 @@ class FacebookcanvasController(BaseController):
         
         session = meta.Session()
         
-        fb_user = self._get_fb_userpersona(session, current_user)
+        fb_user = user_logic.get_fb_userpersona(session, current_user)
         if fb_user is None or fb_user.user is None:
             c.error_msg = 'You need to authorize the We Give app before you can view your received gifts.'
             return(c.error_msg)
@@ -469,7 +476,7 @@ class FacebookcanvasController(BaseController):
         
         session = meta.Session()
         
-        fb_user = self._get_fb_userpersona(session, current_user)
+        fb_user = user_logic.get_fb_userpersona(session, current_user)
         if fb_user is None or fb_user.user is None:
             c.error_msg = 'You need to authorize the We Give app before you can view your sent gifts.'
             return(c.error_msg)

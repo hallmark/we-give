@@ -9,6 +9,7 @@ Consists of logic that handles interaction with the Facebook Platform.
 """
 import logging
 from pylons import config
+from paste.deploy.converters import asint
 
 from facebook.wsgi import facebook as fb
 from facebook import FacebookError
@@ -19,6 +20,7 @@ from wegive.model import Charity, Donation, Gift, User, UserPersona, SocialNetwo
 import wegive.logic.user as user_logic
 
 CANVAS_URL = config['fbapp_canvas_url']
+TEMPLATE_BUNDLE_ID = asint(config['sent_gift_template_bundle_id'])
 
 log = logging.getLogger(__name__)
 
@@ -81,6 +83,19 @@ def _update_user_fbml(facebook_uid, wg_user):
     except FacebookError, err:
         log.debug('Unexpected error calling facebook.setFBML: ' + str(err))
 
+def publish_feed_item(donor_id, recipient_id, donation_id, gift_name, charity_name):
+    data = '{"gifthref":"%s/gift?id=%d", "sendhref":"%s/", "gift":"%s", "charity":"%s"}' % (CANVAS_URL, donation_id,
+                                                                                            CANVAS_URL, gift_name.lower(),
+                                                                                            charity_name)
+    try:
+        publish_user_action_res = fb.api_client.feed.publishUserAction(template_bundle_id=TEMPLATE_BUNDLE_ID,
+                                                                       template_data=data,
+                                                                       target_ids=[recipient_id])
+        log.debug('publishUserAction response: %r' % publish_user_action_res)
+    except FacebookError, err:
+        log.debug('Unexpected error calling facebook.publishUserAction: ' + str(err))
+    
+    
 def set_ref_handle(handle, fbml):
     try:
         set_ref_res = fb.api_client.fbml.setRefHandle(handle=handle, fbml=fbml)
