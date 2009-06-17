@@ -80,6 +80,13 @@
     margin-top: 3px;
     color: #888888;
 }
+.comments_area
+{
+    width: 395px;
+    margin: 35px 0 0 70px;
+    background-color: #ECEFF5;
+    padding-left: 7px;
+}
 </style>
 
 <fb:title>View Gift</fb:title>
@@ -151,5 +158,10 @@
             <a href="${c.facebook.get_login_url()}">Authorize the We Give app</a> to add this gift to your profile and send meaningful gifts to your friends!
         </div>
     % endif
+    
+    
+    <div class="comments_area">
+        <fb:comments xid="wg-gift.${c.donation.id}" canpost="true" candelete="false" numposts="10" reverse="true" simple="true" showform="true" />
+    </div>
 
 %endif

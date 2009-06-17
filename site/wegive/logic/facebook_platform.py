@@ -84,9 +84,13 @@ def _update_user_fbml(facebook_uid, wg_user):
         log.debug('Unexpected error calling facebook.setFBML: ' + str(err))
 
 def publish_feed_item(donor_id, recipient_id, donation_id, gift_name, charity_name):
-    data = '{"gifthref":"%s/gift?id=%d", "sendhref":"%s/", "gift":"%s", "charity":"%s"}' % (CANVAS_URL, donation_id,
-                                                                                            CANVAS_URL, gift_name.lower(),
-                                                                                            charity_name)
+    data = '''{"gifthref":"%s/gift?id=%d",
+               "sendhref":"%s/",
+               "gift":"%s",
+               "charity":"%s",
+               "comments_xid":"wg-gift.%d"}''' % (CANVAS_URL, donation_id,
+                                                  CANVAS_URL, gift_name.lower(),
+                                                  charity_name, donation_id)
     try:
         publish_user_action_res = fb.api_client.feed.publishUserAction(template_bundle_id=TEMPLATE_BUNDLE_ID,
                                                                        template_data=data,
