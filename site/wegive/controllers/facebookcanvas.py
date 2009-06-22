@@ -26,7 +26,7 @@ from wegive.lib.base import BaseController, render
 import wegive.lib.helpers as h
 import wegive.model as model
 import wegive.model.meta as meta
-from wegive.model import Charity, Donation, Gift, User, UserPersona, SocialNetwork, Transaction
+from wegive.model import Charity, Donation, Gift, User, UserPersona, SocialNetwork, Transaction, MultiUseToken
 import wegive.logic.facebook_platform as fb_logic
 import wegive.logic.payments as fps_logic
 import wegive.logic.user as user_logic
@@ -161,23 +161,7 @@ class FacebookcanvasController(BaseController):
                 log.debug('unable to store gifts in memcached.  make sure memcached server is running!')
         
         # get list of charities that have registered thru CBUI as payment recipients
-        charities_mkey = 'Cols.active-charities'
-        mc_start = time.time()
-        charities = g.mc.get(charities_mkey)
-        log.debug('time for memcached calls: %.3f ms' % ((time.time() - mc_start)*1000.0))
-        if charities:
-            log.debug('got charities from memcached!')
-            c.charities = charities
-        else:
-            charity_q = meta.Session.query(Charity)
-            if FPS_PROMO_ACTIVE:
-                c.charities = charity_q.filter(Charity.promo_recipient_token_id != None).order_by(Charity.created).all()
-            else:
-                c.charities = charity_q.filter(Charity.recipient_token_id != None).order_by(Charity.created).all()
-            if g.mc.set(charities_mkey, c.charities, time=86400):
-                log.debug('stored charities in memcached!')
-            else:
-                log.debug('unable to store charities in memcached.  make sure memcached server is running!')
+        c.charities = self._get_active_charities()
         
         log.debug('time for all DB calls: %.3f ms' % ((time.time() - start)*1000.0))
         
@@ -190,6 +174,42 @@ class FacebookcanvasController(BaseController):
         log.debug('total time: %.3f ms' % ((time.time() - realstart)*1000.0))
         
         return render('/facebook/index.tmpl')
+
+    def _get_active_charities(self):
+        # get list of charities that have registered thru CBUI as payment recipients
+        charities_mkey = 'Cols.active-charities'
+        mc_start = time.time()
+        charities = g.mc.get(charities_mkey)
+        log.debug('time for memcached calls: %.3f ms' % ((time.time() - mc_start)*1000.0))
+        if charities:
+            log.debug('got charities from memcached!')
+            return charities
+        else:
+            charity_q = meta.Session.query(Charity)
+            if FPS_PROMO_ACTIVE:
+                charities = charity_q.filter(Charity.promo_recipient_token_id != None).order_by(Charity.created).all()
+            else:
+                charities = charity_q.filter(Charity.recipient_token_id != None).order_by(Charity.created).all()
+            if g.mc.set(charities_mkey, charities, time=86400):
+                log.debug('stored charities in memcached!')
+            else:
+                log.debug('unable to store charities in memcached.  make sure memcached server is running!')
+            return charities
+
+    def _get_charity(self, charity_id):
+        charity_id = int(charity_id)
+        charity_mkey = 'Charity.%d' % charity_id
+        charity = g.mc.get(charity_mkey)
+        if charity:
+            log.debug('got charity %d from memcached!' % charity_id)
+            return charity
+        else:
+            charity = meta.Session.query(Charity).get(charity_id)
+            if g.mc.set(charity_mkey, charity, time=86400):
+                log.debug('stored charity %d in memcached!' % charity_id)
+            else:
+                log.debug('unable to store charity in memcached.  make sure memcached server is running!')
+            return charity
 
     def send_gift(self):
         """Render gift preview for user to review and then click 'Continue with donation'"""
@@ -244,36 +264,36 @@ class FacebookcanvasController(BaseController):
         c.gift = gift_q.get(gift_id)
         
         # save (pending) donation info to DB or session or memcache or something
-        donation = Donation(fb_user.user.id, recipient_userpersona.user.id, float(c.donation_amt), gift_id, charity_id)
+        wg_user_id = fb_user.user.id
+        donation = Donation(wg_user_id, recipient_userpersona.user.id, float(c.donation_amt), gift_id, charity_id)
         donation.message = c.message
         session.add(donation)
-        session.flush()
+        session.commit()
+        
+        # check if user has multi-use token active
+        multiuse_token_q = meta.Session.query(MultiUseToken)
+        c.multiuse_token = multiuse_token_q.filter_by(user_id=wg_user_id).filter_by(is_active=True).filter(MultiUseToken.est_amount_remaining >= float(c.donation_amt)).first()
         
         # TODO: to prevent form resubmission, commit, then redirect to review_gift page with donation ID??
         
         # compute parameters for request to Co-Branded FPS pages
-        caller_ref = 'wgdonation_%d_%s' % (donation.id, uuid.uuid1().hex)
+        c.caller_ref = 'wgdonation_%d_%s' % (donation.id, uuid.uuid1().hex)
         reason = 'Donation to %s' % charity.name
         if FPS_PROMO_ACTIVE:
             recipient_token = charity.promo_recipient_token_id
         else:
             recipient_token = charity.recipient_token_id
-        c.direct_url = fps_logic.get_cbui_url(caller_ref,
+        c.direct_url = fps_logic.get_cbui_url(c.caller_ref,
                                               reason,
                                               c.donation_amt,
                                               recipient_token=recipient_token,
                                               website_desc='We Give Facebook application')
         
-        session.commit()
-        log_payment_event('APP', 'Created donation', donation_id=donation.id, caller_ref=caller_ref, new_status='new')
+        log_payment_event('APP', 'Created donation', donation_id=donation.id, caller_ref=c.caller_ref, new_status='new')
         
         return render('/facebook/send_gift.tmpl')
 
-    def wrap_it_up(self):
-        log_fb_request(request)
-        facebook.process_request()
-        c.is_app_user = facebook.api_client.added
-        
+    def _validate_cbui_response_signature(self):
         parameters = request.GET.copy()
         
         # verify CBUI return signature
@@ -287,36 +307,68 @@ class FacebookcanvasController(BaseController):
             parameters['awsSignature'] = sig
         else:
             log.debug("FPS signature not found")
-            return("signature not found")
+            raise Exception("signature not found")
         
         log.debug('FPS sig: ' + sig);
         
         if not self.fps_client.validate_pipeline_signature(sig, None, parameters):
-            return("invalid signature")
+            raise Exception("invalid signature")
         
-        status = parameters.get('status')
-        log.debug('Return status from CBUI: ' + status)
+    def wrap_it_up(self):
+        log_fb_request(request)
+        facebook.process_request()
+        c.is_app_user = facebook.api_client.added
         
-        if 'errorMessage' in request.GET:
-            log.error('Error in return from CBUI: ' + request.GET['errorMessage'])
-            c.error_msg = 'There was a problem with your payment authorization.'
-            return render('/facebook/wrap_it_up.tmpl')
-        
-        if status == 'A':
-            c.error_msg = 'You cancelled the donation.  The gift will not be sent.'
-            return render('/facebook/wrap_it_up.tmpl')
-        
-        if not status in ['SA', 'SB', 'SC']:
-            return("status not success")
+        using_multiuse_token = (request.params.get('usemt', 'f') == 't')
         
         session = meta.Session()
+        
+        if using_multiuse_token:
+            # gather information for multi-use token
+            multiuse_token_id = request.params.get('mtid')
+            if multiuse_token_id is None:
+                c.error_msg = 'Token ID is missing.'
+                return render('/facebook/wrap_it_up.tmpl')
+            multiuse_token = meta.Session.query(MultiUseToken).get(multiuse_token_id)
+            if multiuse_token is None:
+                c.error_msg = 'Unable to find multi-use token.'
+                return render('/facebook/wrap_it_up.tmpl')
+            authed_token_id = multiuse_token.token_id
+            authed_payment_method = multiuse_token.payment_method
+        else:
+            # validate and process return response from CBUI
+            try:
+                self._validate_cbui_response_signature()
+            except Exception, err:
+                return(str(err))
+            
+            status = request.GET.get('status')
+            log.debug('Return status from CBUI: ' + status)
+            
+            if 'errorMessage' in request.GET:
+                log.error('Error in return from CBUI: ' + request.GET['errorMessage'])
+                c.error_msg = 'There was a problem with your payment authorization.'
+                return render('/facebook/wrap_it_up.tmpl')
+            
+            if status == 'A':
+                c.error_msg = 'You cancelled the donation.  The gift will not be sent.'
+                return render('/facebook/wrap_it_up.tmpl')
+            
+            if not status in ['SA', 'SB', 'SC']:
+                return("status not success")
+            
+            authed_token_id = request.params.get('tokenID')
+            authed_payment_method = {'SA':'ABT', 'SB':'ACH', 'SC':'CC'}[status]
         
         caller_reference = request.params.get('callerReference')
         donation_id = int(caller_reference.split('_')[1])
         donation = meta.Session.query(Donation).get(donation_id)
         if donation is None:
             log.error('Error in return from CBUI: donation information could not be found')
-            log_payment_event('CBUI', 'Donation information could not be found', donation_id=donation_id, caller_ref=caller_reference, new_status='error')
+            if using_multiuse_token:
+                log_payment_event('APP', 'Donation information could not be found when using multi-use token', donation_id=donation_id, caller_ref=caller_reference, new_status='error')
+            else:
+                log_payment_event('CBUI', 'Donation information could not be found', donation_id=donation_id, caller_ref=caller_reference, new_status='error')
             
             c.error_msg = 'Gift information could not be found.'
             return render('/facebook/wrap_it_up.tmpl')
@@ -343,13 +395,16 @@ class FacebookcanvasController(BaseController):
             transaction.recipient_token_id = donation.charity.promo_recipient_token_id
         else:
             transaction.recipient_token_id = donation.charity.recipient_token_id
-        transaction.sender_token_id = request.params.get('tokenID')
-        transaction.payment_method = {'SA':'ABT', 'SB':'ACH', 'SC':'CC'}[status]
+        transaction.sender_token_id = authed_token_id
+        transaction.payment_method = authed_payment_method
         session.add(transaction)
         
         session.flush()
         donation.transaction_id = transaction.id
-        log_payment_event('CBUI', 'Return from Co-branded pipeline; Created transaction', donation_id=donation.id, transaction_id=transaction.id, caller_ref=caller_reference, new_status='pending')
+        if using_multiuse_token:
+            log_payment_event('APP', 'Using multi-use token %d; Created transaction' % multiuse_token.id, donation_id=donation.id, transaction_id=transaction.id, caller_ref=caller_reference, new_status='pending')
+        else:
+            log_payment_event('CBUI', 'Return from Co-branded pipeline; Created transaction', donation_id=donation.id, transaction_id=transaction.id, caller_ref=caller_reference, new_status='pending')
         
         # invoke Pay operation on Amazon FPS
         fps_response = fps_logic.pay_marketplace(transaction.sender_token_id,
@@ -394,6 +449,11 @@ class FacebookcanvasController(BaseController):
             session.flush()
             fb_logic.update_user_fbml_by_wg_userid(donation.recipient_id)
             
+            if using_multiuse_token:
+                fps_logic.update_multiuse_token_estimate(session,
+                                                         transaction.sender_token_id,
+                                                         transaction.amount)
+            
             donor_fb_uid = user_logic.get_network_uid(session, donation.donor_id)
             if donor_fb_uid == 1004760:
                 log.debug('not publishing feed item for facebook user mark.ture')
@@ -427,6 +487,133 @@ class FacebookcanvasController(BaseController):
         
         c.invitee_uid = request.params.get('invitee')
         return render('/facebook/invite_sent.tmpl')
+
+    def setup_multi(self):
+        log_fb_request(request)
+        facebook.process_request()
+        c.is_app_user = facebook.api_client.added
+        if not c.is_app_user:
+            return '<fb:redirect url="index" />'
+        
+        c.charities = self._get_active_charities()
+        return render('/facebook/setup_multi.tmpl')
+
+    def process_multi(self):
+        log_fb_request(request)
+        facebook.process_request()
+        c.is_app_user = facebook.api_client.added
+        if not c.is_app_user:
+            return '<fb:redirect url="index" />'
+        
+        current_user = facebook.user
+        if not current_user:
+            return '<fb:redirect url="index" />'
+        
+        session = meta.Session()
+        
+        fb_user = user_logic.get_fb_userpersona(session, current_user)
+        if fb_user is None:
+            return '<fb:redirect url="index" />'
+        
+        # validate
+        total_amount = request.POST.get('total_amount')
+        charity_ids = request.POST.getall('charity_val')
+        
+        if charity_ids is None or len(charity_ids) == 0:
+            c.error_msg = 'No charities were specified.'
+            return render('/facebook/setup_multi.tmpl')
+        
+        # save (pending) multi-use token info to DB
+        multiuse_token = MultiUseToken(fb_user.user.id, float(total_amount))
+        session.add(multiuse_token)
+        session.flush()
+        caller_ref = 'wgmultiuse_%d_%s' % (multiuse_token.id, uuid.uuid1().hex)
+        multiuse_token.caller_reference = caller_ref
+        session.commit()
+        log_payment_event('APP', 'Created multi-use token', caller_ref=caller_ref, new_status='new')
+        
+        # compute parameters for request to Co-Branded FPS pages
+        reason = 'Authorize multiple donations'
+        charity_tokens = []
+        for charity_id in charity_ids:
+            charity = self._get_charity(charity_id)
+            if FPS_PROMO_ACTIVE:
+                recipient_token = charity.promo_recipient_token_id
+            else:
+                recipient_token = charity.recipient_token_id
+            charity_tokens.append(recipient_token)
+        recipient_token_list = ",".join(charity_tokens)
+        
+        # info for multi-use token CBUI call:
+        #
+        # - minimum transaction amount: 1.00
+        # - expiration: default 1 year
+        # - maximum amount limit: total amount (from user)
+        # - recipients: list of tokens from charities
+        #
+        direct_url = fps_logic.get_multiuse_cbui_url(caller_ref,
+                                                     reason,
+                                                     total_amount,
+                                                     minimum_amount=1.0,
+                                                     recipient_token_list=recipient_token_list,
+                                                     return_url = c.canvas_url + '/multiuse_return',
+                                                     website_desc='We Give Facebook application')
+        
+        return '<fb:redirect url="%s" />' % direct_url
+
+    #def activate_multiple(self):
+    def multiuse_return(self):
+        log_fb_request(request)
+        facebook.process_request()
+        c.is_app_user = facebook.api_client.added
+        
+        try:
+            self._validate_cbui_response_signature()
+        except Exception, err:
+            return(str(err))
+        
+        status = request.GET.get('status')
+        log.debug('Return status from multi-use token CBUI: ' + status)
+        
+        if 'errorMessage' in request.GET:
+            log.error('Error in return from multi-use token CBUI: ' + request.GET['errorMessage'])
+            c.error_msg = 'There was a problem with your multi-use token authorization.'
+            return render('/facebook/setup_multi.tmpl')
+        
+        if status == 'A':
+            c.error_msg = 'You cancelled the multi-use token authorization.'
+            return render('/facebook/setup_multi.tmpl')
+        
+        if not status in ['SA', 'SB', 'SC']:
+            return("status not success")
+        
+        session = meta.Session()
+        
+        caller_reference = request.params.get('callerReference')
+        multiuse_token_id = int(caller_reference.split('_')[1])
+        c.multiuse_token = meta.Session.query(MultiUseToken).get(multiuse_token_id)
+        if c.multiuse_token is None:
+            log.error('Error in return from multi-use token CBUI: multi-use token information could not be found')
+            log_payment_event('CBUI', 'Multi-use token information could not be found', caller_ref=caller_reference, new_status='error')
+            
+            c.error_msg = 'Multi-use token information could not be found.'
+            return render('/facebook/setup_multi.tmpl')
+        
+        # Check if multi-use token is already active.
+        # This may be the case if a user refreshes the page or revisits it using the Back button
+        if c.multiuse_token.is_active:
+            log.debug('Multi-use token %d is already active.' % c.multiuse_token.id)
+            
+            return render('/facebook/activate_multiple.tmpl')
+        
+        c.multiuse_token.is_active = True
+        c.multiuse_token.token_id = request.params.get('tokenID')
+        c.multiuse_token.payment_method = {'SA':'ABT', 'SB':'ACH', 'SC':'CC'}[status]
+        session.commit()
+        
+        log_payment_event('CBUI', 'Return from Co-branded pipeline; Multi-use token %d is active' % c.multiuse_token.id, caller_ref=caller_reference, new_status='success')
+        
+        return render('/facebook/activate_multiple.tmpl')
 
     def allgifts(self):
         log_fb_request(request)

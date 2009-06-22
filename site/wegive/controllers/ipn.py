@@ -21,6 +21,7 @@ import wegive.model as model
 import wegive.model.meta as meta
 from wegive.model import Transaction
 import wegive.logic.facebook_platform as fb_logic
+import wegive.logic.payments as fps_logic
 import wegive.logic.user as user_logic
 
 log = logging.getLogger(__name__)
@@ -135,6 +136,10 @@ class IpnController(BaseController):
                 if transaction.buyer_name is None and buyer_name is not None:
                     transaction.buyer_name = buyer_name
                 fb_logic.update_user_fbml_by_wg_userid(transaction.donation.recipient_id)
+                # update estimated amount in multi-use token
+                fps_logic.update_multiuse_token_estimate(session,
+                                                         transaction.sender_token_id,
+                                                         transaction.amount)
                 # stash some info for the feed entry
                 donor_fb_uid = user_logic.get_network_uid(session, transaction.donation.donor_id)
                 recipient_fb_uid = user_logic.get_network_uid(session, transaction.donation.recipient_id)

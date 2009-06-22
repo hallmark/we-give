@@ -17,7 +17,7 @@ import urllib, urllib2
 
 import wegive.lib.helpers as h
 import wegive.model.meta as meta
-from wegive.model import Charity, Donation, Gift, User, UserPersona, SocialNetwork, Transaction
+from wegive.model import Charity, Donation, Gift, User, UserPersona, SocialNetwork, Transaction, MultiUseToken
 
 AWS_KEY_ID = config['AWS_KEY_ID']
 CBUI_RETURN_URL = config['fps_cbui_return_url']
@@ -62,6 +62,56 @@ def get_cbui_url(caller_reference,
     url = "%s?%s" % (CBUI_URL, query_string)
     log.debug('FPS pipeline URL: %s' % url)
     return url
+
+def get_multiuse_cbui_url(caller_reference,
+                          payment_reason,
+                          global_amount_limit,
+                          recipient_token_list,
+                          minimum_amount=None,
+                          website_desc=None,
+                          collect_shipping_address=False,
+                          return_url=CBUI_RETURN_URL,
+                          pipeline_name="MultiUse",
+                 ):
+    """Compute parameters for request of multi-use token to Co-Branded FPS pages"""
+    fps_client = app_globals.fps_client
+    
+    parameters = {'callerReference': caller_reference,
+                  'paymentReason': payment_reason,
+                  'globalAmountLimit': global_amount_limit,
+                  'recipientTokenList': recipient_token_list,
+                  'callerKey': AWS_KEY_ID,
+                  'pipelineName': pipeline_name,
+                  'returnURL': return_url,
+                  'version': FPS_API_VERSION,
+                  }
+    
+    # optional param
+    if website_desc is not None:
+        parameters['websiteDescription'] = website_desc
+    if collect_shipping_address:
+        parameters['collectShippingAddress'] = True
+    if minimum_amount is not None:
+        parameters['amountType'] = 'Minimum'
+        parameters['transactionAmount'] = minimum_amount
+    
+    parameters['awsSignature'] = fps_client.get_pipeline_signature(parameters)
+    query_string = urllib.urlencode(parameters)
+    url = "%s?%s" % (CBUI_URL, query_string)
+    log.debug('FPS multi-use token pipeline URL: %s' % url)
+    return url
+
+def update_multiuse_token_estimate(session,
+                                   token_id,
+                                   amount_spent):
+    """Update est_amount_remaining in MultiUseToken row to track remaining amount."""
+    multiuse_token = meta.Session.query(MultiUseToken).filter_by(token_id=token_id).first()
+    if multiuse_token is None:
+        log.debug('No multi-use token found for token ID %s.' % token_id)
+        return
+    else:
+        multiuse_token.est_amount_remaining -= float(amount_spent)
+        log.debug('Multi-use token %s has $%.2f remaining' % (token_id, multiuse_token.est_amount_remaining))
 
 def pay_marketplace(sender_token,
                     recipient_token,

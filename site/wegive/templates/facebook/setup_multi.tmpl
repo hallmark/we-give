@@ -1,0 +1,161 @@
+## -*- coding: utf-8 -*-
+##
+## All portions of the code written by Mark Ture are Copyright (c) 2009
+## Mark Ture. All rights reserved.
+##############################################################################
+<%inherit file="/include/fb_base.tmpl"/>
+
+<style>
+#gift_case
+{
+    background-color: #F7F7F7;
+    width: 630px;
+    padding: 25px 65px 10px;
+}
+
+a.anchor_button
+{
+    text-decoration: none;
+    padding: 3px 18px 4px;
+}
+.page_row
+{
+    margin: 20px 0;
+    padding-left: 20px;
+}
+.page_row h3
+{
+    margin-bottom: 5px;
+}
+
+.gift_store_row
+{
+    margin: 20px 0;
+}
+
+
+.fbbluebox
+{
+    background-color: #eceff6;
+    border: 1px solid #d4dae8;
+    color: #333333;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: bold;
+}
+</style>
+
+<fb:title>Setup Multiple Donations</fb:title>
+
+<fb:dashboard>
+    <fb:help href="help">Help Me!</fb:help>
+</fb:dashboard>
+
+<fb:tabs>
+    <fb:tab-item href="index" title="Send a Gift" />
+%if c.is_app_user:
+    <fb:tab-item href="received" title="Received" />
+    <fb:tab-item href="sent" title="Sent" />
+%endif
+    <fb:tab-item href="mission" title="Our Mission" />
+</fb:tabs>
+
+<script>
+<!--
+    function alltrim(str)
+    {
+        return str.replace(/^\s+|\s+$/g, '');
+    }
+    
+    function isValidAmount(str)
+    {
+        if (str == null)
+            return false;
+        
+        str = alltrim(str);
+        return /^[1-9]\d*(\.\d{2})?$/.test(str);
+    }
+    
+    function displayError(title, message, context)
+    {
+        if (!context)
+        {
+            new Dialog(Dialog.DIALOG_POP).showMessage(title, message);
+        }
+        else
+        {
+            new Dialog(Dialog.DIALOG_CONTEXTUAL).setContext(context).showMessage(title, message);
+        }
+    }
+    
+    function checkForm(form)
+    {
+        var params = form.serialize();
+        
+        if (alltrim(params.total_amount) == '')
+        {
+            var context = document.getElementById('total_amount');
+            var msg = "Please specify a total amount of donations to authorize.";
+            displayError("Error", msg, context);
+            return false;
+        }
+        else if (!isValidAmount(params.total_amount))
+        {
+            var context = document.getElementById('total_amount');
+            var msg = "Please specify a valid total for the amount of donations to authorize ($1 or more).";
+            displayError("Error", msg, context);
+            return false;
+        }
+        
+        return true;
+    }
+//-->
+</script>
+
+<div id="gift_case">
+%if c.error_msg:
+    <fb:error message="There was an error with your request">
+        <p>
+            ${c.error_msg}
+        <p>
+        <p>
+            Please try again.
+        </p>
+    </fb:error>
+    
+    <a href="setup_multi">Setup Multiple Donations</a>
+%else:
+    <h3>Setup Multiple Donations:</h3>
+
+    <p>
+        If you are sending many donation gifts through We Give, it may be easier for you to authorize multiple donations at once, instead of authorizing each donation separately.
+    </p>
+    
+    <form id="multiuse_form" name="multiuse_form" action="process_multi" method="post" onsubmit="return checkForm(this);">
+    
+    <div class="page_row">
+        <h3>Set the total amount of donations to authorize:</h3>
+        $ <input id="total_amount" type="text" name="total_amount" class="inputtext" value="30.00" autocomplete="off" /> USD
+    </div>
+    
+    <div class="gift_store_row">
+        For example, if you specify a total of $30, then you will be able to send thirty $1 donation gifts without needing to re-authorize through Amazon Payments each time.
+    </div>
+    <div class="gift_store_row">
+        You will be authorizing donations to the following charities.  When we add more charities later on, you will need to re-authorize with Amazon Payments.
+        <ul>
+    %for charity in c.charities:
+            <li>${charity.name}<input type="hidden" name="charity_val" value="${charity.id}" /></li>
+    %endfor
+        </ul>
+    </div>
+
+    <div class="gift_store_row">
+        <input type="submit" value="Authorize multiple donations" class="inputsubmit" /> <a href="index">Cancel</a>
+    </div>
+    
+    </form>
+%endif
+</div>
+
+<div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>

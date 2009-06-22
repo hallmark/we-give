@@ -300,6 +300,31 @@ class Donation(Base):
     def __repr__(self):
         return "<Donation(donor<%d>, recipient<%d>, $%.2f)>" % (self.donor_id, self.recipient_id, self.amount)
 
+class MultiUseToken(Base):
+    """
+    An Amazon FPS multi-use token associated with a User and a list of charities.
+    """
+    __tablename__ = 'wg_multiusetoken'
+    __table_args__ = {'mysql_charset': 'utf8', 'mysql_engine':'InnoDB'}
+    
+    id = Column(types.Integer, Sequence('multiusetoken_id_seq', optional=True), primary_key=True)
+    user_id = Column(types.Integer, ForeignKey("wg_user.id"), nullable=False)
+    token_id = Column(types.String(128))
+    caller_reference = Column(types.String(128))
+    is_active = Column(types.Boolean, default=False, nullable=False)
+    total_amount = Column(types.Float, nullable=False)
+    est_amount_remaining = Column(types.Float, nullable=False)
+    payment_method = Column(types.String(3))                    # CC, ACH, or ABT
+    
+    def __init__(self, user_id, total_amount):
+        self.user_id = user_id
+        self.total_amount = total_amount
+        self.est_amount_remaining = total_amount
+        self.is_active = False
+    
+    def __repr(self):
+        return "<MultiUseToken(user<%d>, $%.2f)>" % (self.user_id, self.total_amount)
+    
 class Transaction(Base):
     """
     An Amazon Flexible Payments System (FPS) transaction.

@@ -145,8 +145,13 @@ a.anchor_button
     </div>
     <div class="gift_store_row">
         <a href="${c.direct_url}" class="inputbutton anchor_button">Continue with donation</a> <a href="index">Cancel</a>
-##        <div id="testdiv">Test text</div>
     </div>
+    %if c.multiuse_token:
+        or:
+        <div class="gift_store_row">
+            <a href="wrap_it_up?usemt=t&amp;callerReference=${c.caller_ref}&amp;mtid=${c.multiuse_token.id}" class="inputbutton anchor_button">Pay with pre-authorized donations</a>
+        </div>
+    %endif
 %endif
 </div>
 
