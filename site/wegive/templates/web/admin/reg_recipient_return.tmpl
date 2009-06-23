@@ -8,7 +8,11 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8" >
+%if c.error_msg:
+    <title>Registration Unsuccessful - We Give Admin</title>
+%else:
     <title>Registration Successful - We Give Admin</title>
+%endif
 </head>
 <body>
     <style>
@@ -26,12 +30,32 @@
             border: 2px solid #FF0099;
             padding: 30px 30px 150px;
         }
+        .content a:link,
+        .content a:visited,
+        .content a:hover
+        {
+            color: blue;
+            text-decoration: none;
+        }
+        .content a:hover
+        {
+            text-decoration: underline;
+        }
     </style>
     <div class="content">
+    %if c.error_msg:
+        <p>
+            ${c.error_msg}
+        <p>
+    %else:
         <h2>Congratulations!</h2>
     
         <p>
             Your charity, ${c.charity.name}, has been registered to receive payments through We Give.
         </p>
+        <p>
+            Go to <a href="http://apps.facebook.com/we-give/">We Give on Facebook</a> to send donations gifts to your friends.
+        </p>
+    %endif
     </div>
 </body>

@@ -12,7 +12,8 @@ from sprox.tablebase import TableBase
 from sprox.fillerbase import TableFiller
 from wegive.model import User, Charity
 import wegive.model.meta as meta
-from pylons import config, app_globals
+from pylons import config, app_globals as g
+from paste.deploy.converters import asbool
 
 from wegive.lib.base import BaseController, render
 #import wegive.lib.helpers as h
@@ -20,6 +21,7 @@ from wegive.lib.base import BaseController, render
 AWS_KEY_ID = config['AWS_KEY_ID']
 AWS_SECRET_KEY = config['AWS_SECRET_KEY']
 CBUI_RETURN_URL = config['fps_recip_token_return_url']
+FPS_PROMO_ACTIVE = asbool(config['fps_free_processing_promo_is_active'])
 
 log = logging.getLogger(__name__)
 
@@ -49,10 +51,12 @@ def log_admin_req(req):
 class AdminController(BaseController):
 
     def __init__(self):
-        self.fps_client = app_globals.fps_client
+        self.fps_client = g.fps_client
 
     def index(self):
-        return render('/web/admin/index.tmpl')
+        # do not display admin index page until it is ready
+        redirect_to(controller='hub_site', action='index')
+        #return render('/web/admin/index.tmpl')
 
     def exclude_ga(self):
         return render('/web/admin/exclude_ga.tmpl')
@@ -97,6 +101,47 @@ class AdminController(BaseController):
         import urllib, urllib2
         import uuid
         
+        if FPS_PROMO_ACTIVE:
+            recipient_pays = 'False'
+        else:
+            recipient_pays = 'True'
+        parameters = {'callerReference': 'wgrecipient_%d_%s' % (c.charity.id, uuid.uuid1().hex),
+                      'maxFixedFee': 0,
+                      'maxVariableFee' : 0,
+                      'paymentMethod' : 'CC,ACH,ABT',
+                      'recipientPaysFee': recipient_pays,
+                      'callerKey': AWS_KEY_ID,
+                      'pipelineName': 'Recipient',
+                      'websiteDescription': 'We Give Foundation',
+                      'returnURL': CBUI_RETURN_URL,
+                      'version': '2009-01-09',
+                      }
+        parameters['awsSignature'] = self.fps_client.get_pipeline_signature(parameters)
+        query_string = urllib.urlencode(parameters)
+        c.fps_cbui_url = "%s?%s" % (config['fps_cbui_url'], query_string)
+        log.debug("\nCBUI URL -----\n%s\n" % c.fps_cbui_url)
+        
+        return render('/web/admin/reg_recipient_2.tmpl')
+
+    def register_charity(self):
+        log_admin_req(request)
+        code = request.params.get('sc')
+        
+        if code == 'Ql4mMWkfAsYgMnNprzadt7Yl3A8':
+            charity_shortname = 'hpwell'
+        else:
+            charity_shortname = ''
+        
+        charity_q = meta.Session.query(Charity)
+        c.charity = charity_q.filter_by(short_code=charity_shortname).first()
+        if c.charity is None:
+            c.error_msg = 'Charity not found'
+            return render('/web/admin/reg_recipient_2.tmpl')
+        
+        # compute parameters for request to Co-Branded FPS pipeline
+        import urllib, urllib2
+        import uuid
+
         parameters = {'callerReference': 'wgrecipient_%d_%s' % (c.charity.id, uuid.uuid1().hex),
                       'maxFixedFee': 0,
                       'maxVariableFee' : 0,
@@ -112,9 +157,9 @@ class AdminController(BaseController):
         query_string = urllib.urlencode(parameters)
         c.fps_cbui_url = "%s?%s" % (config['fps_cbui_url'], query_string)
         log.debug("\nCBUI URL -----\n%s\n" % c.fps_cbui_url)
-        
-        return render('/web/admin/reg_recipient_2.tmpl')
 
+        return render('/web/admin/reg_recipient_2.tmpl')
+        
     def reg_recipient_return(self):
         log_admin_req(request)
 
@@ -146,7 +191,7 @@ class AdminController(BaseController):
         if 'errorMessage' in request.GET:
             log.error('Error in return from CBUI: ' + request.GET['errorMessage'])
             c.error_msg = 'There was a problem with your payment authorization.'
-            return(c.error_msg)
+            return render('/web/admin/reg_recipient_return.tmpl')
         
         if not status == 'SR':
             return("status not success")
@@ -159,15 +204,25 @@ class AdminController(BaseController):
         if charity is None:
             log.error('Error in return from CBUI: charity information could not be found')
             c.error_msg = 'Charity information could not be found.'
-            return(c.error_msg)
+            return render('/web/admin/reg_recipient_return.tmpl')
         
         token_id = request.params.get('tokenID')
         if token_id is None:
             c.error_msg = 'No recipient token ID found.'
-            return(c.error_msg)
+            return render('/web/admin/reg_recipient_return.tmpl')
         
-        charity.recipient_token_id = token_id
+        if FPS_PROMO_ACTIVE:
+            charity.promo_recipient_token_id = token_id
+        else:
+            charity.recipient_token_id = token_id
         session.commit()
+        
+        # clear out relevant data from memcached
+        charities_mkey = 'Cols.active-charities'
+        if g.mc.delete(charities_mkey):
+            log.debug('Cleared active charities from memcached')
+        else:
+            log.debug('Unable to clear active charities from memcached!')
         
         c.charity = charity
         return render('/web/admin/reg_recipient_return.tmpl')

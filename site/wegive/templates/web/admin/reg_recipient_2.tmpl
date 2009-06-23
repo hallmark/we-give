@@ -8,7 +8,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8" >
-    <title>Register a Payment Recipient - Step 2 - We Give Admin</title>
+    <title>Register a Payment Recipient - We Give Admin</title>
 </head>
 <body>
     <style>
@@ -46,10 +46,16 @@
         }
     </style>
     <div class="content">
-        <h2>Register a Charity to Receive Payments - Step 2</h2>
+        <h2>Register a Charity to Receive Payments</h2>
+
+    %if c.error_msg:
+        <p>
+            ${c.error_msg}
+        <p>
+    %else:
     
         <p>
-            Click below to register your charity &ndash; ${c.charity.name} &ndash; to receive donation payments through We Give.
+            Click below to authorize your charity &ndash; ${c.charity.name} &ndash; to receive donation payments through We Give.
         </p>
         <p>
             You will need an Amazon Payments Business Account to register.
@@ -57,5 +63,6 @@
         <p style="text-align: center; margin-top: 30px;">
             <a href="${c.fps_cbui_url}" class="submit-link">Register</a>
         </p>
+    %endif
     </div>
 </body>
