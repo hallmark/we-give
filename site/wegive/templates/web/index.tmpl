@@ -9,9 +9,30 @@
     ${parent.head()}
     <!-- play with CSS here -->
     <style type="text/css">
-        .foo
+        .content
         {
-            color: red;
+            padding-bottom: 100px;
+        }
+        .content a:link,
+        .content a:visited,
+        .content a:hover
+        {
+            color: blue;
+            text-decoration: none;
+        }
+        .content a:hover
+        {
+            text-decoration: underline;
+        }
+        .facebook_badge
+        {
+            width: 100%;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .facebook_badge img
+        {
+            border: 0;
         }
     </style>
 </%def>
@@ -27,5 +48,9 @@
             Go to <a href="/admin/">the admin</a>.
             </%doc>
         </p>
+        
+        <div class="facebook_badge">
+            <a href="http://apps.facebook.com/we-give/"><img height="44" width="144" src="find_us_on_facebook_badge.gif" /></a>
+        </div>
 
     </div>
