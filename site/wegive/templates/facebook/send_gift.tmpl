@@ -95,6 +95,10 @@ a.anchor_button
     font-size: 13px;
     font-weight: bold;
 }
+.fps_badge
+{
+    float: right;
+}
 </style>
 
 <fb:dashboard>
@@ -141,10 +145,10 @@ a.anchor_button
         </div>
     </div>
     <div class="gift_store_row">
-        Your donation of $${c.donation_amt} to ${c.charity_name} will be processed through Amazon Payments.
+        <img width="60" height="38" src="http://g-ecx.images-amazon.com/images/G/01/cba/b/p3.gif" class="fps_badge" />Your donation of $${c.donation_amt} to ${c.charity_name} will be processed through Amazon Payments.
     </div>
     <div class="gift_store_row">
-        <a href="${c.direct_url}" class="inputbutton anchor_button">Continue with donation</a> <a href="index">Cancel</a>
+        <a href="${c.direct_url}" class="inputbutton anchor_button">Continue with donation</a> &nbsp;<a href="index">Cancel</a>
     </div>
     %if c.multiuse_token:
         or:
