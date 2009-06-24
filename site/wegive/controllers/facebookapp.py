@@ -19,7 +19,7 @@ from wegive.lib.base import BaseController, render
 import wegive.logic.facebook_platform as fb_logic
 import wegive.logic.user as user_logic
 import wegive.model.meta as meta
-from wegive.model import Charity, Donation, Gift, User, UserPersona,
+from wegive.model import Charity, Donation, Gift, User, UserPersona
 #from wegive import model
 
 log = logging.getLogger(__name__)
