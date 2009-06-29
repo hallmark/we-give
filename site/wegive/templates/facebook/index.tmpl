@@ -289,7 +289,7 @@ a.gift:hover
         else if (alltrim(params.amount) == '')
         {
             var context = document.getElementById('gift_amount');
-            var msg = "Please specify an amount for the donation. (empty)";
+            var msg = "Please specify an amount for the donation.";
             displayError("Error", msg, context);
             return false;
         }
@@ -337,17 +337,26 @@ a.gift:hover
 <input type="hidden" name="uuid" value="${c.uuid}" />
 <input type="hidden" name="gift_id" id="gift_id" value="" />
 
-<div class="page_row">
-    <h3>Choose your recipient:</h3>
-    <fb:friend-selector />
-</div>
-
 <%
     if not c.is_app_user:
         disable_non_users = ' disabled="disabled"'
     else:
         disable_non_users = ''
 %>
+
+<div class="page_row">
+    <h3>Select the charity:</h3>
+        <select name="charity_val" id="gift_charity"${disable_non_users}>
+    % for charity in c.charities:
+            <option value="${charity.id}">${charity.name}</option>
+    % endfor
+        </select>
+</div>
+
+<div class="page_row">
+    <h3>Choose your recipient:</h3>
+    <fb:friend-selector />
+</div>
 
 <div class="gift_preview" id="preview_box">
     <div class="preview_img_cnt">
@@ -366,22 +375,6 @@ a.gift:hover
 <div class="page_row">
     <h3>Set the amount of your donation:</h3>
     $ <input id="gift_amount" type="text" name="amount" class="inputtext" value="1.00" autocomplete="off"${disable_non_users} /> USD
-</div>
-
-<div class="page_row">
-    <h3>Select the charity:</h3>
-        <select name="charity_val" id="gift_charity"${disable_non_users}>
-    % for charity in c.charities:
-            <option value="${charity.id}">${charity.name}</option>
-    % endfor
-        </select>
-##    <fb:fbml version="1.1">
-##        <fb:typeahead-input name="charity" autocomplete="off" size="40">
-##    % for charity in c.charities:
-##            <fb:typeahead-option value="${charity.id}">${charity.name}</fb:typeahead-option>
-##    % endfor
-##        </fb:typeahead-input>
-    </fb:fbml>
 </div>
 
 <%doc>
