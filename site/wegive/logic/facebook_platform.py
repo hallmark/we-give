@@ -62,17 +62,24 @@ def _update_user_fbml(facebook_uid, wg_user):
         skinny_content = '<fb:ref handle="profileCommonStyles" /><fb:subtitle>&nbsp;<fb:action href="%s/">Give to a Friend</fb:action></fb:subtitle><div class="no_items">No gifts yet.</div>' % CANVAS_URL
         boxes_content = skinny_content
     else:
-        top_gifts = received_gifts[:4]
+        top_gifts = received_gifts[:8]
         
         subtitle_fbml = '<fb:ref handle="profileCommonStyles" /><fb:subtitle><a href="%s/allgifts?uid=%d">%s</a><fb:action href="%s/">Give to a Friend</fb:action></fb:subtitle>' % (CANVAS_URL, facebook_uid, h.plural(gift_count, 'gift', 'gifts'), CANVAS_URL)
         
         gifts_buf = []
         for idx, donation in enumerate(top_gifts):
+            if idx == 4:
+                gifts_buf.append('<fb:wide>')
             gifts_buf.append('<div class="gift_box"><div class="gift_img"><a href="%s/gift?id=%d" title="%s"><img src="' % (CANVAS_URL, donation.id, donation.gift.name))
             gifts_buf.append(h.gift_image_url(donation.gift_id))
             gifts_buf.append('"></a></div><div class="gift_caption"><span class="caption_from">From:</span> <span class="caption_name"><fb:name uid="%s" firstnameonly="true" useyou="false" ifcantsee="Anon" /></span></div></div>' % donation.fb_uid)
-            if idx % 2 == 1:
-                gifts_buf.append('<div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>')
+            if idx < 4 and idx % 2 == 1:
+                gifts_buf.append('<fb:narrow><div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div></fb:narrow>')
+            if idx % 4 == 3:
+                gifts_buf.append('<fb:wide><div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div></fb:wide>')
+        if len(top_gifts) > 4:
+            gifts_buf.append('</fb:wide>')
+        
         gifts_fbml = ''.join(gifts_buf)
         
         skinny_content = subtitle_fbml + gifts_fbml
