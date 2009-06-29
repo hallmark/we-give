@@ -67,10 +67,12 @@ def _update_user_fbml(facebook_uid, wg_user):
         subtitle_fbml = '<fb:ref handle="profileCommonStyles" /><fb:subtitle><a href="%s/allgifts?uid=%d">%s</a><fb:action href="%s/">Give to a Friend</fb:action></fb:subtitle>' % (CANVAS_URL, facebook_uid, h.plural(gift_count, 'gift', 'gifts'), CANVAS_URL)
         
         gifts_buf = []
-        for donation in top_gifts:
+        for idx, donation in enumerate(top_gifts):
             gifts_buf.append('<div class="gift_box"><div class="gift_img"><a href="%s/gift?id=%d" title="%s"><img src="' % (CANVAS_URL, donation.id, donation.gift.name))
             gifts_buf.append(h.gift_image_url(donation.gift_id))
             gifts_buf.append('"></a></div><div class="gift_caption"><span class="caption_from">From:</span> <span class="caption_name"><fb:name uid="%s" firstnameonly="true" useyou="false" ifcantsee="Anon" /></span></div></div>' % donation.fb_uid)
+            if idx % 2 == 1:
+                gifts_buf.append('<div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>')
         gifts_fbml = ''.join(gifts_buf)
         
         skinny_content = subtitle_fbml + gifts_fbml
@@ -102,11 +104,9 @@ def publish_feed_item(donor_id, recipient_id, donation_id, gift_name, charity_na
 
 def publish_stream_item(donor_id, recipient_id, donation):
     charity_name = donation.charity.name
-    # get recipient name
-    info = fb.api_client.users.getInfo([recipient_id], ['first_name'])[0]
     
     gifthref = "%s/gift?id=%d" % (CANVAS_URL, donation.id)
-    message = 'gave %s a meaningful gift.' % (info['first_name'])
+    message = 'Here is a meaningful gift.'
     
     properties = {}
     properties['Charity'] = {'text':charity_name, 'href':donation.charity.url}
@@ -121,8 +121,7 @@ def publish_stream_item(donor_id, recipient_id, donation):
     attachment = {}
     attachment['name'] = donation.gift.name
     attachment['href'] = gifthref
-    attachment['caption'] = 'This donation gift benefits %s' % charity_name
-    #attachment['description'] = 'some description'
+    attachment['caption'] = 'This donation gift benefits %s.' % charity_name
     attachment['comments_xid'] = 'wg-gift.%d' % donation.id
     attachment['properties'] = properties
     attachment['media'] = media
