@@ -13,6 +13,7 @@ from paste.deploy.converters import asint
 
 from facebook.wsgi import facebook as fb
 from facebook import FacebookError
+import simplejson
 
 import wegive.lib.helpers as h
 import wegive.model.meta as meta
@@ -98,6 +99,50 @@ def publish_feed_item(donor_id, recipient_id, donation_id, gift_name, charity_na
         log.debug('publishUserAction response: %r' % publish_user_action_res)
     except FacebookError, err:
         log.debug('Unexpected error calling facebook.publishUserAction: ' + str(err))
+
+def publish_stream_item(donor_id, recipient_id, donation):
+    charity_name = donation.charity.name
+    # get recipient name
+    info = fb.api_client.users.getInfo([recipient_id], ['first_name'])[0]
+    
+    gifthref = "%s/gift?id=%d" % (CANVAS_URL, donation.id)
+    message = 'gave %s a meaningful gift.' % (info['first_name'])
+    
+    properties = {}
+    properties['Charity'] = {'text':charity_name, 'href':donation.charity.url}
+    
+    media = []
+    giftimage = {}
+    giftimage['type'] = 'image'
+    giftimage['src'] = h.gift_image_url(donation.gift_id)
+    giftimage['href'] = gifthref
+    media.append(giftimage)
+    
+    attachment = {}
+    attachment['name'] = donation.gift.name
+    attachment['href'] = gifthref
+    attachment['caption'] = 'This donation gift benefits %s' % charity_name
+    #attachment['description'] = 'some description'
+    attachment['comments_xid'] = 'wg-gift.%d' % donation.id
+    attachment['properties'] = properties
+    attachment['media'] = media
+    
+    action_links = []
+    send_gift_link = {}
+    send_gift_link['text'] = 'Send a gift'
+    send_gift_link['href'] = "%s/" % CANVAS_URL
+    action_links.append(send_gift_link)
+    
+    log.debug('Publishing message to stream: %s' % message)
+    
+    try:
+        stream_publish_res = fb.api_client.stream.publish(message=message,
+                                                          action_links=simplejson.dumps(action_links),
+                                                          attachment=simplejson.dumps(attachment),
+                                                          target_id=recipient_id)
+        log.debug('Stream.publish response: %r' % stream_publish_res)
+    except FacebookError, err:
+        log.debug('Unexpected error calling facebook Stream.publish: ' + str(err))
     
     
 def set_ref_handle(handle, fbml):
