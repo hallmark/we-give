@@ -61,6 +61,17 @@ class AdminController(BaseController):
     def exclude_ga(self):
         return render('/web/admin/exclude_ga.tmpl')
 
+    def flush_memcached(self):
+        gifts_mkey = 'Cols.gifts-page1'
+        res = g.mc.delete(gifts_mkey)
+        log.debug('Result for deleting page 1 of gifts from memcached: %d' % res)
+        
+        charities_mkey = 'Cols.active-charities'
+        res = g.mc.delete(charities_mkey)
+        log.debug('Result for deleting list of active charities from memcached: %d' % res)
+        
+        return 'done'
+
     def users(self):
         from wegive.model import meta
         session = meta.Session()
