@@ -403,6 +403,12 @@ a.gift:hover
     <input type="submit" value="Continue" class="inputsubmit"${disable_non_users} />
 </div>
 
+%if c.show_prompt_perm:
+<div class="page_row">
+    <fb:prompt-permission perms="publish_stream">Would you like our application to post to your News Feed?</fb:prompt-permission>
+</div>
+%endif
+
 </form>
 
 

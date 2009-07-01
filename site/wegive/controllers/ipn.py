@@ -159,6 +159,15 @@ class IpnController(BaseController):
                     fb_logic.publish_feed_item(donor_fb_uid, recipient_fb_uid,
                                                donation_id, gift_name,
                                                charity_name)
+                    
+                    has_publish_stream = facebook.api_client.users.hasAppPermission(ext_perm='publish_stream')
+                    #log.debug('has_publish_stream: %s' % has_publish_stream)
+                    if has_publish_stream == 1:
+                        # publish story to recipient's Wall and to News Feeds
+                        fb_logic.publish_stream_item(donor_fb_uid, recipient_fb_uid,
+                                                     transaction.donation)
+                    else:
+                        log.debug("User %s does not have 'publish_stream' permission. Not publishing to stream." % donor_fb_uid)
                 else:
                     log.debug('unable to find user session key in memcached')
                 

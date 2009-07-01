@@ -173,6 +173,13 @@ class FacebookcanvasController(BaseController):
         
         log.debug('total time: %.3f ms' % ((time.time() - realstart)*1000.0))
         
+        ext_perms = request.params.get('fb_sig_ext_perms', '').split(',')
+        if 'publish_stream' in ext_perms:
+            c.show_prompt_perm = False
+        else:
+            # show link for Tracy and me
+            c.show_prompt_perm = (int(current_user) == 541265766 or int(current_user) == 1004760)
+        
         return render('/facebook/index.tmpl')
 
     def _get_active_charities(self):
@@ -440,6 +447,8 @@ class FacebookcanvasController(BaseController):
             # TODO: handle more stuff here??
             donation.transaction_status = 'failed'
         
+        c.recipient_fb_uid = user_logic.get_network_uid(session, donation.recipient_id)
+        
         # If 'Pay' operation succeeded, update donation and user profile FBML
         # This should only happen for Amazon balance transfers (ABT).  Other
         # payment methods require verification and start in 'Pending' status.
@@ -455,12 +464,18 @@ class FacebookcanvasController(BaseController):
                                                          transaction.amount)
             
             donor_fb_uid = user_logic.get_network_uid(session, donation.donor_id)
-            if donor_fb_uid == 1004760:
-                log.debug('not publishing feed item for facebook user mark.ture')
+
+            fb_logic.publish_feed_item(donor_fb_uid, c.recipient_fb_uid,
+                                       donation.id, donation.gift.name,
+                                       donation.charity.name)
+            
+            ext_perms = request.params.get('fb_sig_ext_perms', '').split(',')
+            if 'publish_stream' in ext_perms:
+                # publish story to recipient's Wall and to News Feeds
+                fb_logic.publish_stream_item(donor_fb_uid, c.recipient_fb_uid,
+                                             donation)
             else:
-                fb_logic.publish_feed_item(donor_fb_uid, c.recipient_fb_uid,
-                                           donation.id, donation.gift.name,
-                                           donation.charity.name)
+                log.debug("User %s does not have 'publish_stream' permission. Not publishing to stream." % donor_fb_uid)
         else:
             # save user session info in memcached to be used when IPN is received
             log.debug('Saving Facebook session info in memcached: user %s, session_key %s' % (facebook.api_client.user,
@@ -474,7 +489,6 @@ class FacebookcanvasController(BaseController):
         session.commit()
         
         c.donation = donation
-        c.recipient_fb_uid = user_logic.get_network_uid(session, donation.recipient_id)
         c.payment_method = transaction.payment_method
         c.pay_status = transaction.fps_transaction_status
         
