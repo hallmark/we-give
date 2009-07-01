@@ -528,6 +528,60 @@ METHODS = {
         'getUnconnectedFriendsCount': [
         ],
     },
+
+    # stream methods (beta)
+    'stream': {
+        'addComment': [
+            ('post_id', str, []),
+            ('comment', str, []),
+            ('uid', int, ['optional']),
+        ],
+
+        'addLike': [
+            ('uid', int, ['optional']),
+            ('post_id', str, ['optional']),
+        ],
+
+        'get': [
+            ('viewer_id', int, ['optional']),
+            ('source_ids', list, ['optional']),
+            ('start_time', int, ['optional']),
+            ('end_time', int, ['optional']),
+            ('limit', int, ['optional']),
+            ('filter_key', str, ['optional']),
+        ],
+
+        'getComments': [
+            ('post_id', str, []),
+        ],
+
+        'getFilters': [
+            ('uid', int, ['optional']),
+        ],
+
+        'publish': [
+            ('message', str, ['optional']),
+            ('attachment', json, ['optional']),
+            ('action_links', json, ['optional']),
+            ('target_id', str, ['optional']),
+            ('uid', str, ['optional']),
+        ],
+
+        'remove': [
+            ('post_id', str, []),
+            ('uid', int, ['optional']),
+        ],
+
+        'removeComment': [
+            ('comment_id', str, []),
+            ('uid', int, ['optional']),
+        ],
+
+        'removeLike': [
+            ('uid', int, ['optional']),
+            ('post_id', str, ['optional']),
+        ],
+    },
 }
 
 # TODO: REMOVE  -  BEGIN HERE ============================================
