@@ -176,9 +176,11 @@ class FacebookcanvasController(BaseController):
         ext_perms = request.params.get('fb_sig_ext_perms', '').split(',')
         if 'publish_stream' in ext_perms:
             c.show_prompt_perm = False
-        else:
+        elif current_user is not None:
             # show link for Tracy and me
             c.show_prompt_perm = (int(current_user) == 541265766 or int(current_user) == 1004760)
+        else:
+            c.show_prompt_perm = False
         
         return render('/facebook/index.tmpl')
 
