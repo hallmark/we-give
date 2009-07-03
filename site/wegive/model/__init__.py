@@ -98,7 +98,7 @@ class UserPersona(Base):
         self.network_user_id = network_user_id
 
     def __repr__(self):
-        return "<UserPersona(%d on network<%d>)>" % (self.wg_user_id, network_id)
+        return "<UserPersona(%d on network<%d>)>" % (self.wg_user_id, self.network_id)
 
 class SocialNetwork(Base):
     """
