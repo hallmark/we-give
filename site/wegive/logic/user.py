@@ -45,5 +45,6 @@ def get_fb_userpersona(session, fb_uid, create_if_missing=False):
         session.flush()
         fb_userpersona = UserPersona(new_user.id, fb_network.id, fb_uid)
         session.add(fb_userpersona)
+        session.flush()
     
     return fb_userpersona
