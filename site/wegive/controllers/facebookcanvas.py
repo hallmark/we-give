@@ -163,6 +163,19 @@ class FacebookcanvasController(BaseController):
         # get list of charities that have registered thru CBUI as payment recipients
         c.charities = self._get_active_charities()
         
+        c.preselected_charity_id = None
+        if len(c.charities) == 1:
+            # TODO: temporary logic until we have more than 1 charity
+            c.preselected_charity_id = c.charities[0].id
+        else:
+            co_param = request.params.get('co')
+            if co_param is not None:
+                for charity in c.charities:
+                    if charity.short_code == co_param:
+                        c.preselected_charity_id = charity.id
+                        break
+        log.debug('preselected_charity_id: %s' % c.preselected_charity_id)
+        
         log.debug('time for all DB calls: %.3f ms' % ((time.time() - start)*1000.0))
         
         c.form_uuid = uuid.uuid1().hex
@@ -757,6 +770,14 @@ class FacebookcanvasController(BaseController):
         log_fb_request(request)
         facebook.process_request()
         c.is_app_user = facebook.api_client.added
-        
-        return render('/facebook/help.tmpl')
     
+        return render('/facebook/help.tmpl')
+
+    """
+    def exclude_ga(self):
+        log_fb_request(request)
+        facebook.process_request()
+        c.is_app_user = facebook.api_client.added
+        
+        return render('/facebook/fb_exclude_ga.tmpl')
+    """

@@ -1,0 +1,38 @@
+## -*- coding: utf-8 -*-
+##
+## All portions of the code written by Mark Ture are Copyright (c) 2009
+## Mark Ture. All rights reserved.
+##############################################################################
+<%inherit file="/include/fb_base.tmpl"/>
+
+<style>
+#gift_case
+{
+    background-color: #F7F7F7;
+    width: 630px;
+    padding: 10px 65px;
+}
+</style>
+
+<fb:title>Exclude Browser from Google Analytics</fb:title>
+
+<fb:dashboard>
+    <fb:help href="help">Help Me!</fb:help>
+</fb:dashboard>
+
+<fb:tabs>
+    <fb:tab-item href="index" title="Send a Gift" />
+    <fb:tab-item href="mission" title="Our Mission" />
+    <fb:tab-item href="exclude_ga" title="Secret Stuff" selected="true" />
+</fb:tabs>
+
+<div id="gift_case">
+    <h3>Exclude Browser from Google Analytics:</h3>
+
+    <p>
+        <a href="#" onclick="__utmSetVar('no_ga'); return false;">Click here</a> to exclude your browser from being tracked by Google Analytics for the We Give Facebook app.
+    </p>
+    <p>
+        Thank you.
+    </p>
+</div>

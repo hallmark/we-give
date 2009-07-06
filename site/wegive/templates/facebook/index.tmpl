@@ -9,241 +9,6 @@
     <fb:google-analytics uacct="UA-9214235-2" page="/we-give/index" />
 </%def>
 
-<style type="text/css">
-#add_profile_box
-{
-    float: right;
-}
-#add_profile_text
-{
-    float: left;
-    width: 490px;
-}
-.page_row
-{
-    margin: 20px 0;
-    padding-left: 20px;
-}
-.page_row h3
-{
-    margin-bottom: 5px;
-}
-.placeholder
-{
-    color: #777777;
-}
-#gift_store
-{
-    /*border: 1px solid #CCCCCC;*/
-    background-color: #F7F7F7;
-    width: 630px;
-    padding: 10px 65px;
-}
-#gifts_display
-{
-    background-color: #FFFFFF;
-    padding: 8px 15px;
-    border: 1px solid #DDDDDD;
-}
-#gifts_grid
-{
-    height: 200px;
-    padding-left: 2px;
-}
-.gift_container
-{
-    float: left;
-    padding: 3px;
-    margin: 4px 0 0 4px;
-    background-color: #CCCCCC;
-}
-a.gift
-{
-    display: block;
-    height: 64px;
-    width: 64px;
-    background-color: #F7F7F7;
-}
-a.gift:hover
-{
-    background-color: #E7E7E7;
-}
-.gift img
-{
-    border: 0 none;
-    width: 64px;
-    height: 64px;
-}
-.gift_caption
-{
-    height: 22px;
-    width: 64px;
-    text-align: center;
-}
-#gifts_directory
-{
-    float: right;
-    width: 140px;
-    padding: 6px 9px 0;
-}
-#gifts_paginator
-{
-    padding: 4px 11px;
-}
-.gift_preview
-{
-    position: absolute;
-    left: 430px;
-    width: 105px;
-    height: 130px;
-}
-.selected_gift_preview
-{
-    border: 2px solid #eeeeee;
-}
-#preview_name
-{
-    color: #888888;
-}
-.preview_img_cnt
-{
-    width: 64px;
-    height: 64px;
-    margin: 18px 0 0 20px;
-}
-.preview_name_cnt
-{
-    margin: 4px 20px 0;
-    text-align: center;
-}
-.fbbluebox
-{
-    background-color: #eceff6;
-    border: 1px solid #d4dae8;
-    color: #333333;
-    padding: 10px;
-    font-size: 13px;
-    font-weight: bold;
-}
-.privacy_control
-{
-    margin-bottom: 5px;
-}
-.privacy_control input
-{
-    float: left;
-    margin-left: 6px;
-}
-.privacy_text
-{
-    margin-left: 27px;
-    padding-top: 2px;
-}
-.my_dash_links
-{
-    padding: 0 10px 5px;
-    border-bottom: 1px solid #CCCCCC;
-}
-.my_help_link
-{
-    float: right;
-}
-.my_header
-{
-    padding: 17px 10px 28px;
-}
-.my_header .motto
-{
-    font-size: 87%;
-    color: #888888;
-    font-weight: normal;
-    margin-left: 60px;
-}
-</style>
-
-## My version of fb:dashboard
-<div class="my_dash">
-    <div class="my_dash_links clearfix">
-        <div class="my_help_link">
-            <a href="help">Help Me!</a>
-        </div>
-    </div>
-    <div class="my_header clearfix">
-        <fb:header decoration="no_padding"><fb:application-name linked="false" /> <span class="motto">send a gift to a friend &mdash; send a donation to an exemplary charity</span></fb:header>
-    </div>
-</div>
-
-<fb:if-section-not-added section="profile">
-%if c.just_installed:
-    <div class="page_row">
-        <div class="fbbluebox">
-            <div id="add_profile_text">
-            %if c.gift_count > 0:
-                You have received ${h.plural(c.gift_count, 'gift', 'gifts')} from your friends.
-            %endif
-                Add We Give to your profile to display your gifts!
-            </div>
-            <div id="add_profile_box">
-                %if c.gift_count > 0:
-                    <div style="height: 7px; font-size: 1px; clear: right;">&nbsp;</div>
-                %endif
-                <fb:add-section-button section="profile" />
-            </div>
-            <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
-        </div>
-    </div>
-%else:
-    <div id="add_profile_box">
-        <fb:add-section-button section="profile" />
-    </div>
-    <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
-%endif
-</fb:if-section-not-added>
-
-<fb:tabs>
-    <fb:tab-item href="index" title="Send a Gift" selected="true" />
-%if c.is_app_user:
-    <fb:tab-item href="received" title="Received" />
-    <fb:tab-item href="sent" title="Sent" />
-%endif
-    <fb:tab-item href="mission" title="Our Mission" />
-</fb:tabs>
-
-<div id="gift_store">
-    <div id="gifts_display">
-        <div id="gifts_grid">
-    % for (offset, gift) in enumerate(c.gifts):
-            <div class="gift_container">
-                <a href="#" onclick="selectGift(${gift.id}, '${gift.name}', '${h.gift_image_url(gift.id)}'); return false;" title="${gift.name}" class="gift">
-                    <img src="${h.gift_image_url(gift.id)}" alt="${gift.name}">
-                </a>
-                <div class="gift_caption">
-                    $1
-                </div>
-            </div>
-    % endfor
-        </div>
-        <div id="gifts_paginator" class="clearfix">
-            Displaying 1 - ${len(c.gifts)} gifts.
-        </div>
-    </div>
-    <!-- div id="gifts_directory">
-        Browse:
-    </div -->
-</div>
-
-<div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
-
-<fb:if-is-app-user>
-<fb:else>
-    <div class="page_row">
-        <div id="add-app-to-send" class="fbbluebox">
-            <a href="${c.facebook.get_login_url()}">Authorize this app</a> to send meaningful gifts to your friends!
-        </div>
-    </div>
-</fb:else>
-</fb:if-is-app-user>
-
 <script>
 <!--
     function alltrim(str)
@@ -302,7 +67,7 @@ a.gift:hover
         }
         else if (params.charity_val == '')
         {
-            var context = document.getElementById('gift_charity');
+            var context = document.getElementById('select_charity_header');
             var msg = "Please select a charity.";
             displayError("Error", msg, context);
             return false;
@@ -320,6 +85,14 @@ a.gift:hover
     
     function selectGift(giftId, name, imgSrc)
     {
+        var newlySelectedGift = document.getElementById('gift_container_'+giftId);
+        
+        if (newlySelectedGift === currGift)
+        {
+            // nothing more to do
+            return;
+        }
+        
         var gidEl = document.getElementById('gift_id');
         gidEl.setValue(giftId);
         var imgEl = document.getElementById('preview_img');
@@ -328,14 +101,441 @@ a.gift:hover
         nameEl.setTextValue(name);
         var previewEl = document.getElementById('preview_box');
         previewEl.addClassName('selected_gift_preview');
+        
+        if (currGift !== null)
+        {
+            // deselect previously selected gift
+            currGift.removeClassName('selected_gift');
+        }
+        
+        newlySelectedGift.addClassName('selected_gift')
+        currGift = newlySelectedGift;
     }
+    
+    function selectCharity(anchor, charityId)
+    {
+        var charityInp = document.getElementById('charity_val');
+        var prevCharityId = charityInp.getValue();
+        if (prevCharityId != '')
+        {
+            var prevButton = document.getElementById('charity_item_'+prevCharityId);
+            prevButton.removeClassName('selected');
+        }
+        
+        charityInp.setValue(charityId);
+        anchor.addClassName('selected'); 
+    }
+    
+    var currGift = null;
 //-->
 </script>
 
-<form id="gift_form" name="gift_form" action="send_gift" method="post" onsubmit="return checkForm(this);">
+<style type="text/css">
+#add_profile_box
+{
+    float: right;
+}
+#add_profile_text
+{
+    float: left;
+    width: 490px;
+}
+.tabbed_area
+{
+    /*background-color: #F7F7F7;*/
+    width: 760px;
+    padding: 0;
+    margin: 0;
+}
+.display_area
+{
+    /*background-color: #FFFFFF;*/
+    background-color: #FAFAFA;
+    margin: 10px 15px;
+    border: 1px solid #DDDDDD;
+    padding: 8px 15px;
+}
+.gifts_display
+{
+    margin: 10px 0;
+}
+.sidebar_display
+{
+    float: right;
+    width: 140px;
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+    /*border-width: 1px 0 0;*/
+    border: none;
+}
+.sidebar_block
+{
+    margin: 0;
+    padding: 5px 0;
+    border-bottom: 1px solid #DDDDDD;
+}
+.sidebar_block p
+{
+    padding: 0 10px;
+}
+.main_display
+{
+    margin: 0 160px 10px 0;
+}
+.dialog_link:link,
+.dialog_link:hover,
+.dialog_link:visited
+{
+    text-decoration: none;
+    border-color: #3B5998;
+    border-width: 0 0 1px 0;
+    border-style: dotted;
+}
+.pop_dialog_table
+{
+    width: 650px !important;
+}
+.generic_dialog_popup
+{
+    width: auto !important;
+}
+#how_it_works
+{
+    padding: 11px 0;
+    
+    background-color: #FFDDFF;
+    border-bottom: 2px solid #FF99FF;
+    border-top: 2px solid #FF99FF;
+    font-weight: bold;
+}
+#how_it_works p
+{
+    padding: 0;
+    text-align: center;
+}
+.sidebar_header
+{
+    display: inline-block;
+    margin-bottom: 5px;
+    color: #444444;
+    font-weight: bold;
+}
+.sidebar_footer
+{
+    display: inline-block;
+    margin-top: 4px;
+}
+.payments_logo
+{
+    width: 60px;
+    margin: 5px auto;
+}
+.page_row
+{
+    margin: 20px 0;
+    /*padding-left: 20px;*/
+}
+.page_row h3
+{
+    margin-bottom: 5px;
+}
+.placeholder
+{
+    color: #777777;
+}
+#gift_store
+{
+    /*border: 1px solid #CCCCCC;*/
+    background-color: #F7F7F7;
+    width: 630px;
+    padding: 10px 65px;
+}
+#gifts_display
+{
+    background-color: #FFFFFF;
+    padding: 8px 15px;
+    border: 1px solid #DDDDDD;
+}
+#gifts_grid
+{
+    height: 200px;
+    /*padding-left: 2px;*/
+    padding-left: 29px;
+}
+.gift_container
+{
+    float: left;
+    padding: 3px;
+    margin: 4px 0 0 4px;
+    background-color: #CCCCCC;
+}
+.selected_gift
+{
+    background-color: #FF0099;
+}
+a.gift
+{
+    display: block;
+    height: 64px;
+    width: 64px;
+    background-color: #F7F7F7;
+}
+a.gift:hover
+{
+    background-color: #E7E7E7;
+}
+.gift img
+{
+    border: 0 none;
+    width: 64px;
+    height: 64px;
+}
+.gift_caption
+{
+    height: 22px;
+    width: 64px;
+    text-align: center;
+}
+.selected_gift .gift_caption
+{
+    background-color: #FF99FF;
+}
+#gifts_directory
+{
+    float: right;
+    width: 140px;
+    padding: 6px 9px 0;
+}
+#gifts_paginator
+{
+    padding: 4px 11px 4px 38px;
+}
+.gift_preview
+{
+    position: absolute;
+    left: 430px;
+    width: 105px;
+    height: 130px;
+}
+.selected_gift_preview
+{
+    border: 2px solid #eeeeee;
+    background-color: #ffffff;
+}
+#preview_name
+{
+    color: #888888;
+}
+.preview_img_cnt
+{
+    width: 64px;
+    height: 64px;
+    margin: 18px 0 0 20px;
+}
+.preview_name_cnt
+{
+    margin: 4px 20px 0;
+    text-align: center;
+}
+.fbbluebox
+{
+    background-color: #eceff6;
+    border: 1px solid #d4dae8;
+    color: #333333;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: bold;
+}
+.about_charity_box
+{
+    float: right;
+    width: 308px;
+    background-color: #ffffff;
+    border: 2px solid #eeeeee;
+    padding: 7px;
+    position: relative;
+    top: 10px;
+}
+.about_charity_box .website_link
+{
+    text-align: right;
+}
+ul.toggle_charities
+{
+    width: 230px;
+    margin: 7px 0 0 10px;
+}
+.toggle_charities
+{
+    list-style-image: none;
+    list-style-position: outside;
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    /*text-align: center;*/
+}
+.toggle_charities li
+{
+    background: #F1F1F1 url(http://b.static.ak.fbcdn.net/images/components/toggle_tab_gloss.gif) repeat-x scroll left top;
+    /*background: #FFFFFF;*/
+    display: inline;
+    padding: 2px 0 3px;
+}
+.toggle_charities li a
+{
+    /*border-color: #898989 #898989 #898989 -moz-use-text-color;*/
+    border-color: #ABABAB;
+    border-style: solid;
+    border-width: 1px;
+    color: #333333;
+    display: inline-block;
+    font-weight: bold;
+    padding: 3px 8px 4px 9px;
+    width: 200px;
+    margin-bottom: 4px;
+}
+.toggle_charities li a.selected
+{
+    /*background: #6D84B4;*/
+    /*border-color: #3B5998 #5973A9;*/
+    background: #EE99DD;
+    border-color: #AB6EC1 #D988D9;
+    border-style: solid;
+    border-width: 1px;
+    color: #FFFFFF;
+    /*margin-left: -1px;*/
+}
+.toggle_charities li.first a
+{
+    /*border-bottom: none;*/
+}
+.toggle_charities li a.selected:hover
+{
+    text-decoration: none;
+}
+.privacy_control
+{
+    margin-bottom: 5px;
+}
+.privacy_control input
+{
+    float: left;
+    margin-left: 6px;
+}
+.privacy_text
+{
+    margin-left: 27px;
+    padding-top: 2px;
+}
+.my_dash_links
+{
+    padding: 0 10px 5px;
+    border-bottom: 1px solid #CCCCCC;
+}
+.my_help_link
+{
+    float: right;
+}
+.my_header
+{
+    padding: 17px 10px 28px;
+}
+.my_header .motto
+{
+    font-size: 87%;
+    color: #888888;
+    font-weight: normal;
+    margin-left: 60px;
+}
+.more_charities_soon
+{
+    color: #888888;
+    margin: 7px 0 10px 10px;
+    width: 200px;
+}
+</style>
 
-<input type="hidden" name="uuid" value="${c.uuid}" />
-<input type="hidden" name="gift_id" id="gift_id" value="" />
+## My version of fb:dashboard
+<div class="my_dash">
+    <div class="my_dash_links clearfix">
+        <div class="my_help_link">
+            <a href="help">Help Me!</a>
+        </div>
+    </div>
+    <div class="my_header clearfix">
+        <fb:header decoration="no_padding"><fb:application-name linked="false" /> <span class="motto">send a gift to a friend &mdash; send a donation to an exemplary charity</span></fb:header>
+    </div>
+</div>
+
+<fb:if-section-not-added section="profile">
+%if c.just_installed:
+    <div class="page_row">
+        <div class="fbbluebox">
+            <div id="add_profile_text">
+            %if c.gift_count > 0:
+                You have received ${h.plural(c.gift_count, 'gift', 'gifts')} from your friends.
+            %endif
+                Add We Give to your profile to display your gifts!
+            </div>
+            <div id="add_profile_box">
+                %if c.gift_count > 0:
+                    <div style="height: 7px; font-size: 1px; clear: right;">&nbsp;</div>
+                %endif
+                <fb:add-section-button section="profile" />
+            </div>
+            <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
+        </div>
+    </div>
+%else:
+    <div id="add_profile_box">
+        <fb:add-section-button section="profile" />
+    </div>
+    <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
+%endif
+</fb:if-section-not-added>
+
+<fb:tabs>
+    <fb:tab-item href="index" title="Send a Gift" selected="true" />
+%if c.is_app_user:
+    <fb:tab-item href="received" title="Received" />
+    <fb:tab-item href="sent" title="Sent" />
+%endif
+    <fb:tab-item href="mission" title="Our Mission" />
+</fb:tabs>
+
+<div class="tabbed_area">
+    <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
+    
+    <div class="display_area gifts_display">
+        <div id="gifts_grid">
+    % for (offset, gift) in enumerate(c.gifts):
+            <div class="gift_container" id="gift_container_${gift.id}">
+                <a href="#" onclick="selectGift(${gift.id}, '${gift.name}', '${h.gift_image_url(gift.id)}'); return false;" title="${gift.name}" class="gift">
+                    <img src="${h.gift_image_url(gift.id)}" alt="${gift.name}">
+                </a>
+                <div class="gift_caption">
+                    $1
+                </div>
+            </div>
+    % endfor
+        </div>
+        <div id="gifts_paginator" class="clearfix">
+            Displaying 1 - ${len(c.gifts)} gifts.
+        </div>
+    </div>
+    
+    <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
+    
+    <fb:if-is-app-user>
+    <fb:else>
+        <div class="page_row">
+            <div id="add-app-to-send" class="fbbluebox">
+                <a href="${c.facebook.get_login_url()}">Authorize this app</a> to send meaningful gifts to your friends!
+            </div>
+        </div>
+    </fb:else>
+    </fb:if-is-app-user>
 
 <%
     if not c.is_app_user:
@@ -343,39 +543,169 @@ a.gift:hover
     else:
         disable_non_users = ''
 %>
+    <form id="gift_form" name="gift_form" action="send_gift" method="post" onsubmit="return checkForm(this);">
 
-<div class="page_row">
-    <h3>Select the charity:</h3>
-        <select name="charity_val" id="gift_charity"${disable_non_users}>
-    % for charity in c.charities:
-            <option value="${charity.id}">${charity.name}</option>
-    % endfor
-        </select>
-</div>
+        <input type="hidden" name="uuid" value="${c.uuid}" />
+        <input type="hidden" name="gift_id" id="gift_id" value="" />
+    
+    <div class="display_area sidebar_display">
 
-<div class="page_row">
-    <h3>Choose your recipient:</h3>
-    <fb:friend-selector />
-</div>
+        <div id="how_it_works" class="sidebar_block">
+            <p>
+                <fb:js-string var="how_it_works">
+                    <div style="height: 608px; overflow-y: scroll;">
+                    <p>We believe in supporting grassroots, volunteer run charitable organizations.  Here's how it works:</p>
+                    <p>
+                        <h1>1. We supply the gift</h1>
+                        Thanks to our volunteer artists.
+                        <p style="text-align: center;">
+                            <img width="450" height="74" src="http://images.wegivetofriends.org/web/help/row-of-gifts.png"/>
+                        </p>
+                    </p>
+                    <p>
+                        <h1>2. You provide the donation</h1>
+                        A one dollar donation is all you need to give!
+                        <p>
+                            You'll be temporarily redirected to Amazon to authorize the donation:
+                        </p>
+                        <p style="text-align: center;">
+                            <img width="450" height="105" src="http://images.wegivetofriends.org/web/help/pay-donation-flow.png"/>
+                        </p>
+                        <p>
+                            When you return to We Give, we'll confirm the donation and deliver the digital gift to your friend.
+                            We never need to handle any of your credit card info - Amazon handles your payment information securely.
+                        </p>
+                    </p>
+                    <p>
+                        <h1>3. Your friend gets a meaningful gift</h1>
+                        That they can display in their profile.
+                        <p style="text-align: center;">
+                            <img width="450" height="105" src="http://images.wegivetofriends.org/web/help/profile-box-popout.png"/>
+                        </p>
+                    </p>
+                    <p>
+                        <h1>4. A charity gets your support</h1>
+                        Seriously, this is the part that counts.
+                        <p style="text-align: center;">
+                            <img width="450" height="105" src="http://images.wegivetofriends.org/web/help/charity-work-thumbs.png"/>
+                        </p>
+                    </p>
+                    </div>
+                </fb:js-string>
+                <a href="#" onclick="new Dialog(Dialog.DIALOG_POP).showMessage('How We Give Works', how_it_works, 'Got it, thanks!'); return false;" class="dialog_link">How does this work?</a>
+            </p>
+        </div>
 
-<div class="gift_preview" id="preview_box">
-    <div class="preview_img_cnt">
-        <img src="http://images.wegivetofriends.org/web/blank.gif" id="preview_img">
+        ## Payment Authorizations (Multi-use token)
+        <div class="sidebar_block">
+            <p>
+                <span class="sidebar_header">Sending many gifts?</span>
+                <a href="setup_multi">Authorize multiple donations in advance.</a>
+            </p>
+        </div>
+
+        <div class="sidebar_block">
+            <p>
+                <span class="sidebar_header">Efficient donations</span>
+                Our donation payment processing is free until August 31.  Help us grow!
+                <%doc>
+                <span class="sidebar_footer"><a href="#" onclick="new Dialog(Dialog.DIALOG_POP).showMessage('Free Processing', 'Processing credit card payments is expensive, even for charitable donations.  Through an offer with Amazon.com, our donation processor, payment processing with We Give is free until August 31.  That means for every dollar you donate, every cent makes it to the charity!  Help us grow and spread the word as quickly as possible!', 'Okay'); return false;" class="dialog_link">Learn more.</a></span>
+                </%doc>
+            </p>
+        </div>
+
+        <div class="sidebar_block">
+            <p>
+                Donations powered by:
+                <div class="payments_logo">
+                    <img width="60" height="38" src="http://g-ecx.images-amazon.com/images/G/01/cba/b/p3.gif">
+                </div>
+            </p>
+        </div>
+
     </div>
-    <div class="preview_name_cnt">
-        <span id="preview_name"></span>
+    
+    <div class="display_area main_display">
+        
+        <div class="about_charity_box">
+            <h4>About Aid to Children Without Parents</h4>
+            <p>
+                For over 20 years, ACWP has been helping disadvantaged children in Vietnam become self-sufficient
+                through educational and vocational training, providing preventive healthcare services,
+                short-term financial support, and through an emergency relief program.
+            </p>
+            <p class="website_link">
+                <a href="http://www.acwp.org/" target="_blank">http://www.acwp.org/</a>
+            </p>
+        </div>
+        
+        <div class="page_row">
+            <h3 id="select_charity_header">Select the charity:</h3>
+            <input type="hidden" name="charity_val" id="charity_val" value="${c.preselected_charity_id or ''}" />
+            <ul id="gift_charity" class="toggle_charities">
+        % for (offset, charity) in enumerate(c.charities):
+            %if offset == 0:
+                <li class="first">
+            %else:
+                <li>
+            %endif
+            <%
+                if c.preselected_charity_id == charity.id:
+                    anchor_class = ' class="selected"'
+                else:
+                    anchor_class = ''
+            %>
+                    <a href="#"${anchor_class|n} onclick="selectCharity(this, ${charity.id}); return false;" id="charity_item_${charity.id}">${offset+1}. ${charity.name}</a>
+                </li>
+        % endfor
+            </ul>
+        %if len(c.charities) <= 2:
+            <div class="more_charities_soon">
+                More partner charities will be added soon.
+            </div>
+        %endif
+        </div>
+
+        <div class="page_row">
+            <h3>I would like to donate:</h3>
+            $ <input id="gift_amount" type="text" name="amount" class="inputtext" value="1.00" autocomplete="off"${disable_non_users} /> USD
+        </div>
+        
+        <div class="page_row">
+            <h3>Choose your gift recipient:</h3>
+            <fb:friend-selector />
+        </div>
+        
+        <div class="gift_preview" id="preview_box">
+            <div class="preview_img_cnt">
+                <img src="http://images.wegivetofriends.org/web/blank.gif" id="preview_img">
+            </div>
+            <div class="preview_name_cnt">
+                <span id="preview_name"></span>
+            </div>
+        </div>
+
+        <div class="page_row">
+            <h3>Add your message:</h3>
+            <textarea id="gift_message" name="message" rows="4" cols="40" class="placeholder" onfocus="if(this.getValue()=='Your message here...'){this.setValue('');this.removeClassName('placeholder');}" onblur="if(this.getValue()==''){this.setValue('Your message here...');this.addClassName('placeholder');}"${disable_non_users}>Your message here...</textarea>
+        </div>
+
+        <div class="page_row">
+            <input type="submit" value="Preview Your Gift" class="inputsubmit"${disable_non_users} />
+        </div>
+
+        %if c.show_prompt_perm:
+        <div class="page_row">
+            <fb:prompt-permission perms="publish_stream">Would you like our application to post to your News Feed?</fb:prompt-permission>
+        </div>
+        %endif
     </div>
+    
+    </form>
+    <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
 </div>
 
-<div class="page_row">
-    <h3>Add your message:</h3>
-    <textarea id="gift_message" name="message" rows="4" cols="40" class="placeholder" onfocus="if(this.getValue()=='Your message here...'){this.setValue('');this.removeClassName('placeholder');}" onblur="if(this.getValue()==''){this.setValue('Your message here...');this.addClassName('placeholder');}"${disable_non_users}>Your message here...</textarea>
-</div>
 
-<div class="page_row">
-    <h3>Set the amount of your donation:</h3>
-    $ <input id="gift_amount" type="text" name="amount" class="inputtext" value="1.00" autocomplete="off"${disable_non_users} /> USD
-</div>
 
 <%doc>
 <div class="page_row">
@@ -398,17 +728,3 @@ a.gift:hover
     </div>
 </div>
 </%doc>
-
-<div class="page_row">
-    <input type="submit" value="Continue" class="inputsubmit"${disable_non_users} />
-</div>
-
-%if c.show_prompt_perm:
-<div class="page_row">
-    <fb:prompt-permission perms="publish_stream">Would you like our application to post to your News Feed?</fb:prompt-permission>
-</div>
-%endif
-
-</form>
-
-
