@@ -43,12 +43,16 @@
         
         if (params.gift_id == '')
         {
-            displayError("Error", "Please select a gift.");
+            var context = document.getElementById('gifts_context');
+            var msg = "Please select a gift to send to your friend."
+            displayError("Error", msg, context);
             return false;
         }
-        else if (params.friend_selector_id == null || params.friend_selector_id == '')
+        else if (params.charity_val == '')
         {
-            displayError("Error", "Please select a recipient.");
+            var context = document.getElementById('select_charity_header');
+            var msg = "Please select a charity.";
+            displayError("Error", msg, context);
             return false;
         }
         else if (alltrim(params.amount) == '')
@@ -65,11 +69,10 @@
             displayError("Error", msg, context);
             return false;
         }
-        else if (params.charity_val == '')
+        else if (params.friend_selector_id == null || params.friend_selector_id == '')
         {
-            var context = document.getElementById('select_charity_header');
-            var msg = "Please select a charity.";
-            displayError("Error", msg, context);
+            var context = document.getElementById('recipient_context');
+            displayError("Error", "Please select a recipient.", context);
             return false;
         }
         else if (params.message == 'Your message here...' || alltrim(params.message) == '')
@@ -259,7 +262,7 @@
 }
 #gifts_grid
 {
-    height: 120px;  /* back to 200px when we have more than 9 gifts!!! */
+    height: 200px;  /* back to 200px from 120px when we have more than 9 gifts!!! */
     padding-left: 29px;
 }
 .gift_container
@@ -456,6 +459,12 @@ ul.toggle_charities
     margin: 7px 0 10px 10px;
     width: 200px;
 }
+.dummy_context
+{
+    width: 1px;
+    visibility: hidden;
+    position: absolute;
+}
 </style>
 <fb:user-agent includes="ie 6">
 <style type="text/css">
@@ -543,7 +552,7 @@ ul.toggle_charities
     % endfor
         </div>
         <div id="gifts_paginator" class="clearfix">
-            Displaying 1 - ${len(c.gifts)} gifts.
+            Displaying 1 - ${len(c.gifts)} gifts. <input id="gifts_context" type="text" name="gifts_context_dummy" class="dummy_context" />
         </div>
     </div>
     
@@ -695,7 +704,7 @@ ul.toggle_charities
         
         <div class="page_row">
             <h3>Choose your gift recipient:</h3>
-            <fb:friend-selector />
+            <fb:friend-selector /> <input id="recipient_context" type="text" name="recipient_context_dummy" class="dummy_context" />
         </div>
         
         <div class="gift_preview" id="preview_box">
