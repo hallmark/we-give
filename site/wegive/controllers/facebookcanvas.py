@@ -187,6 +187,7 @@ class FacebookcanvasController(BaseController):
         log.debug('total time: %.3f ms' % ((time.time() - realstart)*1000.0))
         
         ext_perms = request.params.get('fb_sig_ext_perms', '').split(',')
+        c.has_publish_stream = ('publish_stream' in ext_perms)
         if 'publish_stream' in ext_perms:
             c.show_prompt_perm = False
         elif current_user is not None:
@@ -264,6 +265,7 @@ class FacebookcanvasController(BaseController):
         gift_id = request.params.get('gift_id')
         c.message = request.params.get('message')
         c.donation_amt = request.params.get('amount','1.00')
+        stream_short_msg = request.params.get('stream_short_msg')
         
         form_uuid = request.params.get('uuid')
         # TODO: store & lookup uuid in memcached, to see if user is resubmitting form.  at least log the UUID.
@@ -289,6 +291,8 @@ class FacebookcanvasController(BaseController):
         wg_user_id = fb_user.user.id
         donation = Donation(wg_user_id, recipient_userpersona.user.id, float(c.donation_amt), gift_id, charity_id)
         donation.message = c.message
+        if stream_short_msg is not None and stream_short_msg.strip() != '':
+            donation.stream_short_msg = stream_short_msg
         session.add(donation)
         session.commit()
         
@@ -487,8 +491,10 @@ class FacebookcanvasController(BaseController):
             ext_perms = request.params.get('fb_sig_ext_perms', '').split(',')
             if 'publish_stream' in ext_perms:
                 # publish story to recipient's Wall and to News Feeds
-                fb_logic.publish_stream_item(donor_fb_uid, c.recipient_fb_uid,
-                                             donation)
+                post_id = fb_logic.publish_stream_item(donor_fb_uid, c.recipient_fb_uid,
+                                                       donation)
+                if post_id is not None:
+                    donation.fb_post_id = post_id
             else:
                 log.debug("User %s does not have 'publish_stream' permission. Not publishing to stream." % donor_fb_uid)
         else:

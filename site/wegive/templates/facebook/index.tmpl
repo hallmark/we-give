@@ -721,6 +721,13 @@ ul.toggle_charities
             <h3>Add your message:</h3>
             <textarea id="gift_message" name="message" rows="4" cols="40" class="placeholder" onfocus="if(this.getValue()=='Your message here...'){this.setValue('');this.removeClassName('placeholder');}" onblur="if(this.getValue()==''){this.setValue('Your message here...');this.addClassName('placeholder');}"${disable_non_users}>Your message here...</textarea>
         </div>
+        
+    %if c.has_publish_stream:
+        <div class="page_row">
+            <h3>Short message for your friend's wall (optional):</h3>
+            <input id="stream_short_msg" type="text" name="stream_short_msg" class="inputtext" value="" autocomplete="off"${disable_non_users} />
+        </div>
+    %endif
 
         <div class="page_row">
             <input type="submit" value="Preview Your Gift" class="inputsubmit"${disable_non_users} />

@@ -286,6 +286,8 @@ class Donation(Base):
     given_date = Column(types.DateTime, default=now)
     designation_id = Column(types.Integer, ForeignKey("wg_program.id"))  # i.e. earmark
     tracking_code = Column(types.String(64))  # i.e. for tracking referrals to We Give
+    fb_post_id = Column(types.String(64))
+    stream_short_msg = Column(types.UnicodeText)
     
     # can be associated with multiple transactions if first transaction fails
     transactions = orm.relation("Transaction", order_by="Transaction.created", backref='donation')

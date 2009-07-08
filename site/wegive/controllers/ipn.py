@@ -164,8 +164,11 @@ class IpnController(BaseController):
                     #log.debug('has_publish_stream: %s' % has_publish_stream)
                     if has_publish_stream == 1:
                         # publish story to recipient's Wall and to News Feeds
-                        fb_logic.publish_stream_item(donor_fb_uid, recipient_fb_uid,
-                                                     transaction.donation)
+                        post_id = fb_logic.publish_stream_item(donor_fb_uid, recipient_fb_uid,
+                                                               transaction.donation)
+                        if post_id is not None:
+                            transaction.donation.fb_post_id = post_id
+                            session.commit()
                     else:
                         log.debug("User %s does not have 'publish_stream' permission. Not publishing to stream." % donor_fb_uid)
                 else:

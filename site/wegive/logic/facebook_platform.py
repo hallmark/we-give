@@ -113,7 +113,10 @@ def publish_stream_item(donor_id, recipient_id, donation):
     charity_name = donation.charity.name
     
     gifthref = "%s/gift?id=%d" % (CANVAS_URL, donation.id)
-    message = 'Here is a meaningful gift.'
+    if donation.stream_short_msg is None:
+        message = 'Here is a meaningful gift.'
+    else:
+        message = donation.stream_short_msg
     
     properties = {}
     properties['Charity'] = {'text':charity_name, 'href':donation.charity.url}
@@ -147,8 +150,10 @@ def publish_stream_item(donor_id, recipient_id, donation):
                                                           attachment=simplejson.dumps(attachment),
                                                           target_id=recipient_id)
         log.debug('Stream.publish response: %r' % stream_publish_res)
+        return stream_publish_res
     except FacebookError, err:
         log.debug('Unexpected error calling facebook Stream.publish: ' + str(err))
+        return None
     
     
 def set_ref_handle(handle, fbml):
