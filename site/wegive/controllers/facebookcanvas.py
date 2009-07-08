@@ -154,7 +154,7 @@ class FacebookcanvasController(BaseController):
             c.gifts = gifts
         else:
             gift_q = meta.Session.query(Gift)
-            c.gifts = gift_q.filter_by(for_sale=True).order_by(Gift.created)[:15]
+            c.gifts = gift_q.filter_by(for_sale=True).order_by(Gift.created)[:18]
             if g.mc.set(gifts_mkey, c.gifts, time=86400):
                 log.debug('stored gifts in memcached!')
             else:

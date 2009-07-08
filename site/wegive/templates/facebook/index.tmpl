@@ -161,6 +161,7 @@
 .gifts_display
 {
     margin: 10px 0;
+    padding-top: 6px;
 }
 .sidebar_display
 {
@@ -262,14 +263,14 @@
 }
 #gifts_grid
 {
-    height: 120px;  /* back to 200px from 120px when we have more than 9 gifts!!! */
-    padding-left: 29px;
+    height: 190px;
+    padding-left: 19px;
 }
 .gift_container
 {
     float: left;
     padding: 3px;
-    margin: 4px 0 0 4px;
+    margin: 6px 0 0 6px;
     background-color: #CCCCCC;
 }
 a.gift
@@ -291,7 +292,7 @@ a.gift:hover
 }
 .gift_caption
 {
-    height: 22px;
+    height: 14px;
     width: 64px;
     text-align: center;
 }
@@ -536,7 +537,7 @@ ul.toggle_charities
         <div id="gifts_grid">
     % for (offset, gift) in enumerate(c.gifts):
             <div class="gift_container" id="gift_container_${gift.id}">
-                <img width="76" height="98" class="yellow_border" src="http://images.wegivetofriends.org/web/yellow-gift-border.gif" />
+                <img width="76" height="90" class="yellow_border" src="http://images.wegivetofriends.org/web/yellow-gift-border-90h.gif" />
                 <a href="#" onclick="selectGift(${gift.id}, '${gift.name}', '${h.gift_image_url(gift.id)}'); return false;" title="${gift.name}" class="gift">
                     <img src="${h.gift_image_url(gift.id)}" alt="${gift.name}">
                     <fb:user-agent includes="ie 6">
