@@ -240,6 +240,16 @@ class AdminController(BaseController):
         c.charity = charity
         return render('/web/admin/reg_recipient_return.tmpl')
 
+    def touch_fb_userpersona(self):
+        uid = request.params.get('uid')
+        if uid is None:
+            return 'Please specify uid'
+        
+        session = meta.Session()
+        fb_user = user_logic.get_fb_userpersona(session, uid, create_if_missing=True)
+        session.commit()
+        return 'done'
+
     def touch_fbml(self):
         uid = request.params.get('uid')
         if uid is None:
@@ -254,16 +264,6 @@ class AdminController(BaseController):
             return 'No record of FB user %s' % uid
         
         fb_logic.update_user_fbml_by_userpersona(fb_userpersona)
-        return 'done'
-
-    def touch_fb_userpersona(self):
-        uid = request.params.get('uid')
-        if uid is None:
-            return 'Please specify uid'
-        
-        session = meta.Session()
-        fb_user = user_logic.get_fb_userpersona(session, uid, create_if_missing=True)
-        session.commit()
         return 'done'
 
     def set_ref_handle(self):
