@@ -12,6 +12,8 @@ from sprox.tablebase import TableBase
 from sprox.fillerbase import TableFiller
 from wegive.model import User, Charity
 import wegive.model.meta as meta
+import wegive.logic.user as user_logic
+
 from pylons import config, app_globals as g
 from paste.deploy.converters import asbool
 
@@ -253,7 +255,17 @@ class AdminController(BaseController):
         
         fb_logic.update_user_fbml_by_userpersona(fb_userpersona)
         return 'done'
-    
+
+    def touch_fb_userpersona(self):
+        uid = request.params.get('uid')
+        if uid is None:
+            return 'Please specify uid'
+        
+        session = meta.Session()
+        fb_user = user_logic.get_fb_userpersona(session, uid, create_if_missing=True)
+        session.commit()
+        return 'done'
+
     def set_ref_handle(self):
         handle = request.params.get('handle')
         if handle is None:
