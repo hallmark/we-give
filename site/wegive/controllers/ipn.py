@@ -85,6 +85,7 @@ class IpnController(BaseController):
             return('transactionId not found')
         
         status_code = request.POST.get('statusCode')
+        status_message = request.POST.get('statusMessage')  # logged for failures
         buyer_name = request.POST.get('buyerName')
         caller_reference = request.POST.get('callerReference')
         
@@ -98,7 +99,20 @@ class IpnController(BaseController):
             # TODO: record detailed info in case DB insert was not committed before IPN was received!
             return('transaction info not found')
         
-        log_payment_event('IPN', "Notification received", fps_transaction_id=transaction_id, donation_id=transaction.donation.id, transaction_id=transaction.id, caller_ref=caller_reference, new_status=status_code)
+        if transaction_status.upper() == 'FAILURE' or transaction_status.upper() == 'CANCELLED':
+            log_payment_event('IPN', "Notification received: %s" % status_message,
+                                fps_transaction_id=transaction_id,
+                                donation_id=transaction.donation.id,
+                                transaction_id=transaction.id,
+                                caller_ref=caller_reference,
+                                new_status=status_code)
+        else:
+            log_payment_event('IPN', "Notification received",
+                                fps_transaction_id=transaction_id,
+                                donation_id=transaction.donation.id,
+                                transaction_id=transaction.id,
+                                caller_ref=caller_reference,
+                                new_status=status_code)
         
         if transaction_status.upper() == 'PENDING':
             # if status is pending, look up transaction in DB.
