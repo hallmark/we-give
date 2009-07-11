@@ -164,15 +164,18 @@ class FacebookcanvasController(BaseController):
         c.charities = self._get_active_charities()
         
         c.preselected_charity_id = None
+        c.preselected_charity = None
         if len(c.charities) == 1:
             # TODO: temporary logic until we have more than 1 charity
             c.preselected_charity_id = c.charities[0].id
+            c.preselected_charity = c.charities[0]
         else:
             co_param = request.params.get('co')
             if co_param is not None:
                 for charity in c.charities:
                     if charity.short_code == co_param:
                         c.preselected_charity_id = charity.id
+                        c.preselected_charity = charity
                         break
         log.debug('preselected_charity_id: %s' % c.preselected_charity_id)
         

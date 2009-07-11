@@ -126,7 +126,11 @@
         }
         
         charityInp.setValue(charityId);
-        anchor.addClassName('selected'); 
+        anchor.addClassName('selected');
+        
+        var aboutBox = document.getElementById('about_charity_box');
+        aboutBox.setInnerFBML(blurbs["id"+charityId]);
+        aboutBox.removeClassName('about_charity_hidden');
     }
     
     var currGift = null;
@@ -366,6 +370,10 @@ a.gift:hover
 .about_charity_box .website_link
 {
     text-align: right;
+}
+.about_charity_hidden
+{
+    display: none;
 }
 ul.toggle_charities
 {
@@ -659,17 +667,20 @@ ul.toggle_charities
     
     <div class="display_area main_display">
         
-        <div class="about_charity_box">
-            <h4>About Aid to Children Without Parents</h4>
+    %if c.preselected_charity is None:
+        <div class="about_charity_box about_charity_hidden" id="about_charity_box">
+        </div>
+    %else:
+        <div class="about_charity_box" id="about_charity_box">
+            <h4>About ${c.preselected_charity.name}</h4>
             <p>
-                For over 20 years, ACWP has been helping disadvantaged children in Vietnam become self-sufficient
-                through educational and vocational training, providing preventive healthcare services,
-                short-term financial support, and through an emergency relief program.
+                ${c.preselected_charity.fb_short_blurb}
             </p>
             <p class="website_link">
-                <a href="http://www.acwp.org/" target="_blank">http://www.acwp.org/</a>
+                <a href="${c.preselected_charity.url}" target="_blank">${c.preselected_charity.url}</a>
             </p>
         </div>
+    %endif
         
         <div class="page_row">
             <h3 id="select_charity_header">Select the charity:</h3>
@@ -689,6 +700,15 @@ ul.toggle_charities
             %>
                     <a href="#"${anchor_class|n} onclick="selectCharity(this, ${charity.id}); return false;" id="charity_item_${charity.id}">${offset+1}. ${charity.name}</a>
                 </li>
+                <fb:js-string var="blurbs.id${charity.id}">
+                    <h4>About ${charity.name}</h4>
+                    <p>
+                        ${charity.fb_short_blurb}
+                    </p>
+                    <p class="website_link">
+                        <a href="${charity.url}" target="_blank">${charity.url}</a>
+                    </p>
+                </fb:js-string>
         % endfor
             </ul>
         %if len(c.charities) <= 2:
@@ -725,7 +745,7 @@ ul.toggle_charities
     %if c.has_publish_stream:
         <div class="page_row">
             <h3>Short message for your friend's wall (optional):</h3>
-            <input id="stream_short_msg" type="text" name="stream_short_msg" class="inputtext" value="" autocomplete="off"${disable_non_users} />
+            <input id="stream_short_msg" type="text" name="stream_short_msg" class="inputtext" value="" size="45" autocomplete="off"${disable_non_users} />
         </div>
     %endif
 
