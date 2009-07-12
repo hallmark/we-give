@@ -474,6 +474,13 @@ ul.toggle_charities
     visibility: hidden;
     position: absolute;
 }
+.tip
+{
+    font-style: italic;
+    color: #888888;
+    font-size: 87%;
+    margin-top: 2px;
+}
 </style>
 <fb:user-agent includes="ie 6">
 <style type="text/css">
@@ -746,6 +753,7 @@ ul.toggle_charities
         <div class="page_row">
             <h3>Short message for your friend's wall (optional):</h3>
             <input id="stream_short_msg" type="text" name="stream_short_msg" class="inputtext" value="" size="45" autocomplete="off"${disable_non_users} />
+            <div class="tip">Capitalized and ending with punctuation.  For example, "Have a great day, Pam!"</div>
         </div>
     %endif
 
