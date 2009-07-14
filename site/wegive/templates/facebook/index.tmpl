@@ -37,8 +37,9 @@
         }
     }
     
-    function checkForm(form)
+    function checkForm(formName)
     {
+        var form = document.getElementById(formName);
         var params = form.serialize();
         
         if (params.gift_id == '')
@@ -574,6 +575,7 @@ ul.toggle_charities
     
     <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
     
+    <%doc>
     <fb:if-is-app-user>
     <fb:else>
         <div class="page_row">
@@ -583,14 +585,9 @@ ul.toggle_charities
         </div>
     </fb:else>
     </fb:if-is-app-user>
+    </%doc>
 
-<%
-    if not c.is_app_user:
-        disable_non_users = ' disabled="disabled"'
-    else:
-        disable_non_users = ''
-%>
-    <form id="gift_form" name="gift_form" action="send_gift" method="post" onsubmit="return checkForm(this);">
+    <form id="gift_form" name="gift_form" action="send_gift" method="post" requirelogin=1>
 
         <input type="hidden" name="uuid" value="${c.uuid}" />
         <input type="hidden" name="gift_id" id="gift_id" value="" />
@@ -727,7 +724,7 @@ ul.toggle_charities
 
         <div class="page_row">
             <h3>I would like to donate:</h3>
-            $ <input id="gift_amount" type="text" name="amount" class="inputtext" value="1.00" autocomplete="off"${disable_non_users} /> USD
+            $ <input id="gift_amount" type="text" name="amount" class="inputtext" value="1.00" autocomplete="off" /> USD
         </div>
         
         <div class="page_row">
@@ -746,19 +743,19 @@ ul.toggle_charities
 
         <div class="page_row">
             <h3>Add your message:</h3>
-            <textarea id="gift_message" name="message" rows="4" cols="40" class="placeholder" onfocus="if(this.getValue()=='Your message here...'){this.setValue('');this.removeClassName('placeholder');}" onblur="if(this.getValue()==''){this.setValue('Your message here...');this.addClassName('placeholder');}"${disable_non_users}>Your message here...</textarea>
+            <textarea id="gift_message" name="message" rows="4" cols="40" class="placeholder" onfocus="if(this.getValue()=='Your message here...'){this.setValue('');this.removeClassName('placeholder');}" onblur="if(this.getValue()==''){this.setValue('Your message here...');this.addClassName('placeholder');}">Your message here...</textarea>
         </div>
         
     %if c.has_publish_stream:
         <div class="page_row">
             <h3>Short message for your friend's wall (optional):</h3>
-            <input id="stream_short_msg" type="text" name="stream_short_msg" class="inputtext" value="" size="45" autocomplete="off"${disable_non_users} />
+            <input id="stream_short_msg" type="text" name="stream_short_msg" class="inputtext" value="" size="45" autocomplete="off" />
             <div class="tip">Capitalized and ending with punctuation.  For example, "Have a great day, Pam!"</div>
         </div>
     %endif
 
         <div class="page_row">
-            <input type="submit" value="Preview Your Gift" class="inputsubmit"${disable_non_users} />
+            <input type="submit" value="Preview Your Gift" class="inputsubmit" onclick="return checkForm('gift_form');" />
         </div>
 
         %if c.show_prompt_perm:
