@@ -268,15 +268,16 @@
 }
 #gifts_grid
 {
-    height: 190px;
+    height: 160px;
     padding-left: 19px;
+    margin-top: 3px;
 }
 .gift_container
 {
     float: left;
     padding: 3px;
     margin: 6px 0 0 6px;
-    background-color: #CCCCCC;
+    background-color: #E5E5E5;
 }
 a.gift
 {
@@ -506,7 +507,7 @@ ul.toggle_charities
         </div>
     </div>
     <div class="my_header clearfix">
-        <fb:header decoration="no_padding"><fb:application-name linked="false" /> <span class="motto">send a gift to a friend &mdash; send a donation to an exemplary charity</span></fb:header>
+        <fb:header decoration="no_padding"><fb:application-name linked="false" /> <span class="motto">Give a friend a gift of a small donation in their name to a worthy cause.</span></fb:header>
     </div>
 </div>
 
@@ -550,10 +551,13 @@ ul.toggle_charities
     <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
     
     <div class="display_area gifts_display">
+        
+        <h3>Choose a gift image to send to your friend:</h3>
+        
         <div id="gifts_grid">
     % for (offset, gift) in enumerate(c.gifts):
             <div class="gift_container" id="gift_container_${gift.id}">
-                <img width="76" height="90" class="yellow_border" src="http://images.wegivetofriends.org/web/yellow-gift-border-90h.gif" />
+                <img width="76" height="76" class="yellow_border" src="http://images.wegivetofriends.org/web/yellow-gift-border-76s.gif" />
                 <a href="#" onclick="selectGift(${gift.id}, '${gift.name}', '${h.gift_image_url(gift.id)}'); return false;" title="${gift.name}" class="gift">
                     <img src="${h.gift_image_url(gift.id)}" alt="${gift.name}">
                     <fb:user-agent includes="ie 6">
@@ -562,9 +566,6 @@ ul.toggle_charities
                         </div>
                     </fb:user-agent>
                 </a>
-                <div class="gift_caption">
-                    $1
-                </div>
             </div>
     % endfor
         </div>
@@ -687,7 +688,7 @@ ul.toggle_charities
     %endif
         
         <div class="page_row">
-            <h3 id="select_charity_header">Select the charity:</h3>
+            <h3 id="select_charity_header">Select the benefitting charity:</h3>
             <input type="hidden" name="charity_val" id="charity_val" value="${c.preselected_charity_id or ''}" />
             <ul id="gift_charity" class="toggle_charities">
         % for (offset, charity) in enumerate(c.charities):
@@ -728,7 +729,7 @@ ul.toggle_charities
         </div>
         
         <div class="page_row">
-            <h3>Choose your gift recipient:</h3>
+            <h3>Gift recipient (your friend):</h3>
             <fb:friend-selector /> <input id="recipient_context" type="text" name="recipient_context_dummy" class="dummy_context" />
         </div>
         
@@ -742,7 +743,7 @@ ul.toggle_charities
         </div>
 
         <div class="page_row">
-            <h3>Add your message:</h3>
+            <h3>Add your message to your friend:</h3>
             <textarea id="gift_message" name="message" rows="4" cols="40" class="placeholder" onfocus="if(this.getValue()=='Your message here...'){this.setValue('');this.removeClassName('placeholder');}" onblur="if(this.getValue()==''){this.setValue('Your message here...');this.addClassName('placeholder');}">Your message here...</textarea>
         </div>
         
