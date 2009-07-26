@@ -21,6 +21,7 @@ from facebook.wsgi import facebook
 
 import uuid
 import time
+import simplejson as json
 
 from wegive.lib.base import BaseController, render
 import wegive.lib.helpers as h
@@ -65,6 +66,7 @@ class FacebookcanvasController(BaseController):
     def __before__(self):
         c.facebook = facebook
         c.canvas_url = config['fbapp_canvas_url']
+        c.ajax_callback_url = config['fbapp_ajax_callback_url']
 
     #@template('facebook/index')
     def index(self):
@@ -191,6 +193,7 @@ class FacebookcanvasController(BaseController):
         
         ext_perms = request.params.get('fb_sig_ext_perms', '').split(',')
         c.has_publish_stream = ('publish_stream' in ext_perms)
+        c.has_email_perm = ('email' in ext_perms)
         if 'publish_stream' in ext_perms:
             c.show_prompt_perm = False
         elif current_user is not None:
@@ -402,6 +405,10 @@ class FacebookcanvasController(BaseController):
             c.error_msg = 'Gift information could not be found.'
             return render('/facebook/wrap_it_up.tmpl')
         
+        ext_perms = request.params.get('fb_sig_ext_perms', '').split(',')
+        c.has_publish_stream = ('publish_stream' in ext_perms)
+        c.has_email_perm = ('email' in ext_perms)
+
         # Check if donation already has an associated transaction.  TODO: make sure it's a 'Pay' transaction?
         # This may be the case if a user refreshes the page or revisits it using the Back button
         if len(donation.transactions) != 0:
@@ -491,8 +498,7 @@ class FacebookcanvasController(BaseController):
                                        donation.id, donation.gift.name,
                                        donation.charity.name)
             
-            ext_perms = request.params.get('fb_sig_ext_perms', '').split(',')
-            if 'publish_stream' in ext_perms:
+            if c.has_publish_stream:
                 # publish story to recipient's Wall and to News Feeds
                 post_id = fb_logic.publish_stream_item(donor_fb_uid, c.recipient_fb_uid,
                                                        donation)
@@ -517,6 +523,69 @@ class FacebookcanvasController(BaseController):
         c.pay_status = transaction.fps_transaction_status
         
         return render('/facebook/wrap_it_up.tmpl')
+
+    def multifeed_handler(self):
+        """Handles callback for multiFeedStory form submission."""
+        log_fb_request(request)
+        facebook.process_request()
+        c.is_app_user = facebook.api_client.added
+        
+        donor_fbid = request.POST.get('donor')
+        recipient_fbid = request.POST.get('recipient')
+        donation_id = request.POST.get('did')
+        
+        # look up donation in DB
+        session = meta.Session()
+        donation = session.query(Donation).get(donation_id)
+        
+        if donation is None:
+            err_obj = {"errorCode": 1, "errorTitle" : "Feed Error", "errorMessage" : "Cannot find donation information."}
+            return json.dumps(err_obj)
+        
+        gifthref = "%s/gift?id=%d" % (c.canvas_url, donation.id)
+        
+        template_data = {}
+        template_data['gift'] = donation.gift.name
+        template_data['gifthref'] = gifthref
+        template_data['charity'] = donation.charity.name
+        template_data['charityhref'] = donation.charity.url
+        template_data['comments_xid'] = 'wg-gift.%d' % donation.id
+        template_data['images'] = [{'src':h.gift_image_url(donation.gift_id), 'href':gifthref},]
+        template_data['user_message'] = 'prompt3'
+        
+        obj = {'content': {'feed': {'template_id':110890046851, 'user_message':'prompt2', 'template_data':template_data}, 'next_fbjs': 'feed_done();'}, 'method':'multiFeedStory', 'user_message':'prompt1'}
+        
+        log.debug("multifeed_handler response JSON: %s" % json.dumps(obj))
+        return json.dumps(obj)
+
+    def ajax_transaction_status(self):
+        """Ajax call from wrap_it_up page to get transaction status."""
+        log_fb_request(request)
+        facebook.process_request()
+        c.is_app_user = facebook.api_client.added
+        if not c.is_app_user:
+            return self._ajax_fault("not app user!")
+        elif facebook.fb_params.get('is_ajax', 0) == 0:
+            return self._ajax_fault("not ajax!")
+        
+        donation_id = request.POST.get('did')
+        if donation_id is None:
+            return self._ajax_fault("need to specify donation ID")
+        
+        # look up donation in DB
+        session = meta.Session()
+        donation = session.query(Donation).get(donation_id)
+        
+        obj = {}
+        obj['error'] = False
+        obj['transactionStatus'] = donation.transaction_status
+        return json.dumps(obj)
+
+    def _ajax_fault(self, msg):
+        obj = {}
+        obj['error'] = True
+        obj['errorMsg'] = msg
+        return json.dumps(obj)
 
     def invite_sent(self):
         log_fb_request(request)

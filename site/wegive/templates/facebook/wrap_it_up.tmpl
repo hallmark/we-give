@@ -6,6 +6,39 @@
 <%inherit file="/include/fb_base.tmpl"/>
 
 <style>
+.fbbluebox
+{
+    background-color: #eceff6;
+    border: 1px solid #d4dae8;
+    color: #333333;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: bold;
+}
+.green_box
+{
+    background-color: #eeffdd;
+    border: 1px solid #68a547;
+    color: #333333;
+    padding: 10px;
+    font-size: 12px;
+}
+.red_box
+{
+    background-color: #ffebe8;
+    border: 1px solid #dd3c10;
+    color: #333333;
+    padding: 10px;
+    font-size: 12px;
+}
+.green_box h2,
+.red_box h2,
+.gift_store_row h3
+{
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
 .page_row
 {
     margin: 20px 0;
@@ -14,6 +47,11 @@
 .page_row h3
 {
     margin-bottom: 5px;
+}
+.narrow_row
+{
+    margin: 20px 0;
+    padding: 0 20px;
 }
 #gift_store
 {
@@ -27,74 +65,98 @@
 {
     margin: 20px 0;
 }
+.gift_store_row p
+{
+    font-size: 13px;
+    color: #555555;
+}
+.hidden
+{
+    display: none;
+}
 #gift_box
 {
-    /*float: left;
-    width: 600px;*/
     background-color: #FFFFFF;
     padding: 8px 15px;
     border: 1px solid #DDDDDD;
+    margin-top: 10px;
 }
 #gifts_grid
 {
     height: 300px;
     padding-left: 2px;
 }
-.gift_container
+.user_pic
 {
-    float: left;
-    padding: 3px;
-    margin: 4px 0 0 4px;
-    background-color: #CCCCCC;
+    position: absolute;
 }
-.gift
+.user_name
 {
-    height: 64px;
-    width: 64px;
-    background-color: #F7F7F7;
-}
-.gift_caption
-{
-    height: 22px;
-    width: 64px;
-    text-align: center;
-}
-#gifts_directory
-{
-    float: right;
-    width: 140px;
-    padding: 6px 9px 0;
-}
-#gifts_paginator
-{
-    padding: 4px 11px;
-}
-.fbbluebox
-{
-    background-color: #eceff6;
-    border: 1px solid #d4dae8;
-    color: #333333;
-    padding: 10px;
-    font-size: 13px;
+    color: #888888;
     font-weight: bold;
 }
-.privacy_control
+.gift_content
 {
-    margin-bottom: 5px;
+    min-height: 50px;
+    padding: 0 0 0 60px;
 }
-.privacy_control input
+.gift_and_message
 {
+    padding: 15px 8px 8px 0;
+}
+.gift_image
+{
+    margin: 0 0 0 15px;
     float: left;
-    margin-left: 6px;
 }
-.privacy_text
+.gift_message
 {
-    margin-left: 27px;
-    padding-top: 2px;
+    background: #f7f7f7;
+    padding: 15px 10px;
+    margin-left: 100px;
+    border: 1px solid #e7e7e7;
 }
-.invite_button
+.benefitting
+{
+    width: 100%;
+    text-align: right;
+    font-style: italic;
+    margin-top: 3px;
+    color: #888888;
+}
+.invite_button,
+.post_msg_box
 {
     margin: 10px 0 7px 35px;
+}
+#viral_content
+{
+    padding-top: 5px;
+}
+.placeholder
+{
+    color: #777777;
+}
+.fps_badge
+{
+    float: right;
+}
+.loading_bar
+{
+    width: 220px;
+    margin: 10px auto 0;
+    text-align: center;
+    font-weight: normal;
+}
+#debug_out_row
+{
+    color: #aaaaaa;
+    margin: 20px 0 0;
+    visibility: hidden;
+}
+#debug_out
+{
+    color: #777777;
 }
 </style>
 
@@ -124,62 +186,356 @@
         </p>
     </fb:error>
 %else:
+
+    ## Display the gift being sent to the friend
+    
+    <h3>Wrapping up your gift:</h3>
     <div id="gift_box">
         <div id="gift_display">
-            %if c.recipient_fb_uid:
-                To: <fb:profile-pic uid="${c.recipient_fb_uid}" size="q" />
-            %endif
+            <div class="user_pic"><fb:profile-pic uid="${c.recipient_fb_uid}" size="q" /></div>
+            <div class="gift_content">
+                To: <span class="user_name"><fb:name uid="${c.recipient_fb_uid}" capitalize="true" /></span>
+                <div class="gift_and_message">
+                    <div class="gift_image"><img src="${h.gift_image_url(c.donation.gift_id)}" alt="${c.donation.gift.name}"></div>
+                    <div class="gift_message">
+                        ${h.literal(h.nl2br(c.donation.message))}
+                    </div>
+                    <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
+                    <div class="benefitting">
+                        benefitting <a href="${c.donation.charity.url}" title="Go to website of ${c.donation.charity.name}" target="_blank">${c.donation.charity.name}</a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="gift_store_row">
-        <%
-            method_desc = {'CC':'credit card payment', 'ACH':'bank transfer', 'ABT':'Amazon Payments balance transfer'}[c.payment_method]
-            status_desc = {'Success':'succeeded', 'Pending':'is pending', 'Failure':'did not succeed', 'Cancelled':'was cancelled'}[c.pay_status]
-        %>
-        Your donation of $${'%.2f' % c.donation.amount} to ${c.donation.charity.name} has been authorized through Amazon Payments.  Your ${method_desc} ${status_desc}.
-    </div>
-    %if c.pay_status == 'Pending':
-    <div class="gift_store_row">
-        When the payment is confirmed, your gift to <fb:name uid="${c.recipient_fb_uid}" firstnameonly="true" reflexive="true" /> will be delivered to <fb:pronoun uid="${c.recipient_fb_uid}" possessive="true" /> profile box.
-    </div>
-    %elif c.pay_status == 'Success':
-    <div class="gift_store_row">
-        Your gift to <fb:name uid="${c.recipient_fb_uid}" firstnameonly="true" reflexive="true" /> has been delivered to <fb:pronoun uid="${c.recipient_fb_uid}" possessive="true" /> profile box.
-    </div>
-    %elif c.pay_status == 'Failure':
-    <div class="gift_store_row">
-        You will need to retry your donation through Amazon Payments so that we can send your meaningful gift to <fb:name uid="${c.recipient_fb_uid}" firstnameonly="true" reflexive="true" />.
-    </div>
-    %endif
+
     
-    %if c.pay_status == 'Pending' or c.pay_status == 'Success':
-    <div class="gift_store_row">
-        On behalf of <a href="${c.donation.charity.url}" title="Go to ${c.donation.charity.name}'s website" target="_blank">${c.donation.charity.name}</a>, thank you for your tax-deductible donation!
-    </div>
-    %endif
-    
+    ##
+    ## Payment Status
+    ##
+
     <%
-        content = """I just sent you a meaningful donation gift through We Give, benefitting %s.
-            Add this app to view your gift and send meaningful gifts to others friends.
-            <fb:req-choice url="%s/gift?id=%d" label="View Gift I Sent You" />
-            """ % (c.donation.charity.name, c.canvas_url, c.donation.id)
+        debug_pending = False
     %>
     
-    <fb:if-is-app-user uid="${c.recipient_fb_uid}">
-    <fb:else>
-        <fb:name uid="${c.recipient_fb_uid}" firstnameonly="true" /> is not a user of We Give.
-        Invite <fb:pronoun uid="${c.recipient_fb_uid}" objective="true" /> so that <fb:pronoun uid="${c.recipient_fb_uid}" /> can view your gift!
-        <div class="invite_button">
-            <fb:request-form action="invite_sent" method="POST" invite="true" type="We Give" content="${content | h}">
-                <input type="hidden" fb_protected="true" name="invitee" value="${c.recipient_fb_uid}" />
-                <fb:request-form-submit uid="${c.recipient_fb_uid}" label="Invite %n to We Give" />
-            </fb:request-form>
+    % if debug_pending or c.pay_status == 'Pending':
+    
+        ## show 'processing' box
+        <div class="narrow_row">
+            <div id="processing_payment" class="fbbluebox">
+                <img width="60" height="38" src="http://g-ecx.images-amazon.com/images/G/01/cba/b/p3.gif" class="fps_badge" />Your $${'%.2f' % c.donation.amount} donation to ${c.donation.charity.name} is being processed.<br>
+                This usually takes less than 15 seconds.
+                <br>
+                <div class="loading_bar">
+                    <img width="220" height="19" src="http://images.wegivetofriends.org/web/barbershop-loader.gif" /><br>
+                    Please be patient.
+                </div>
+            </div>
         </div>
-    </fb:else>
-    </fb:if-is-app-user>
+        
+        ## start the Ajax-fancy check
+        <script type="text/javascript">
+            var checkStatusAttempts = 1;
+            var statusBox = document.getElementById('debug_out');
+
+            function checkPaymentStatus()
+            {
+                if (checkStatusAttempts > 20)
+                {
+                    // done trying.
+                    // TODO: message to say processing is taking longer than usual.  Check you 'Sent' page later
+                    //       to see if the gift was sent.
+                }
+                else
+                {
+                    statusBox.setTextValue('Attempt ' + checkStatusAttempts + ' in 1 sec..');
+                    setTimeout(function() {ajaxCheckPaymentStatus()}, 1000);
+                }
+            }
+
+            function hideProcessingBox(callback)
+            {
+                var processingBox = document.getElementById('processing_payment');
+                //processingBox.addClassName('hidden');
+                Animation(processingBox).duration(300).to('opacity', 0).hide().checkpoint(1, callback).go();
+            }
+
+            function handlePaid()
+            {
+                statusBox.setTextValue('Paid!');
+                hideProcessingBox(showSuccessContent);
+            }
+            
+            function handleFailedTransaction()
+            {
+                statusBox.setTextValue('failed!');
+                hideProcessingBox(showFailureContent);
+            }
+            
+            function showSuccessContent()
+            {
+                var successRow = document.getElementById('success_box_row');
+                //successRow.removeClassName('hidden');
+                Animation(successRow).to('opacity', 1).from(0).show().go();
+
+                // if user has stream privs, let them know that a post was made on friend's wall
+                // TODO
+                
+                // show viral actions content
+                var viralContent = document.getElementById('viral_content');
+                Animation(viralContent).to('opacity', 1).from(0).show().go();
+                //viralContent.removeClassName('hidden');
+
+                // else, reveal form to allow user to post to friend's wall
+            }
+
+            function showFailureContent()
+            {
+                var failRow = document.getElementById('fail_box_row');
+                //failRow.removeClassName('hidden');
+                Animation(failRow).duration(300).to('opacity', 1).from(0).show().go();
+            }
+            
+            function ajaxCheckPaymentStatus()
+            {
+                var ajax = new Ajax();
+                ajax.responseType = Ajax.JSON;
+                ajax.requireLogin = true;
+                ajax.ondone = function(data)
+                {
+                    if (data.error)
+                    {
+                        statusBox.setTextValue('Error: ' + data.errorMsg);
+                        // TODO: better error
+                    }
+                    else
+                    {
+                        checkStatusAttempts++;
+                        var status = data.transactionStatus;
+
+                        if (status == 'pending') {
+                            checkPaymentStatus();
+                        } else if (status == 'paid') {
+                            handlePaid();
+                        } else if (status == 'failed' ||
+                                 status == 'cancelled' ||
+                                 status == 'refunded') {
+                            handleFailedTransaction();
+                        }
+                    }
+                };
+                ajax.onerror = function()
+                {
+                    statusBox.setTextValue('There was an Ajax error');
+                    // TODO: better error
+                }
+                var url = '${c.ajax_callback_url}/ajax_transaction_status';
+                var qry = {"did":${c.donation.id}};
+                ajax.post(url, qry);
+            }
+
+            // start repeated Ajax checking 2s after page loads
+            setTimeout(function() {checkPaymentStatus();}, 2000);
+        </script>
+        
+        ## render content for both success and failed states, but hide both
+        ${self.success_box(c.recipient_fb_uid, c.donation, True)}
+        ${self.fail_box(c.recipient_fb_uid, c.donation, c.pay_status, True)}
+        
+    % elif c.pay_status == 'Success':
+    
+        ## render content for success
+        ${self.success_box(c.recipient_fb_uid, c.donation)}
+
+    % elif c.pay_status == 'Failure' or c.pay_status == 'Cancelled':
+    
+        ## render content for failed payment
+        ${self.fail_box(c.recipient_fb_uid, c.donation, c.pay_status)}
+        
+    % endif
+    
+    
+    ##
+    ## Spreading the Word
+    ##
+    
+    % if c.pay_status == 'Success' or c.pay_status == 'Pending':
+    
+        ## render content for sending wall post or invitation
+
+        % if debug_pending or c.pay_status == 'Pending':
+        <div id="viral_content" class="hidden">
+        % else:
+        <div id="viral_content">
+        % endif
+        
+        % if c.has_publish_stream:
+        
+            ## TODO: Let user know that a message has automatically been posted to their friend's wall??
+            
+            ## show invitation for non-app users
+            <%
+                invite_content = """I just sent you a meaningful gift through We Give of a $%.2f donation, benefitting %s.
+                    Add this app to view your gift and send meaningful gifts to others friends.
+                    <fb:req-choice url="%s/gift?id=%d" label="View Gift I Sent You" />
+                    """ % (c.donation.amount, c.donation.charity.name, c.canvas_url, c.donation.id)
+            %>
+
+            <fb:if-is-app-user uid="${c.recipient_fb_uid}">
+            <fb:else>
+                <div class="gift_store_row">
+                    <h3>Spread the Word</h3>
+                    
+                    <p>
+                        <fb:name uid="${c.recipient_fb_uid}" firstnameonly="true" /> is not a user of We Give.
+                        Send <fb:pronoun uid="${c.recipient_fb_uid}" objective="true" /> an invitation so that
+                        <fb:pronoun uid="${c.recipient_fb_uid}" /> can display your gift on
+                        <fb:pronoun uid="${c.recipient_fb_uid}" possessive="true" /> profile!
+                    </p>
+                    <div class="invite_button">
+                        <fb:request-form action="invite_sent" method="POST" invite="true" type="We Give" content="${invite_content | h}">
+                            <input type="hidden" fb_protected="true" name="invitee" value="${c.recipient_fb_uid}" />
+                            <fb:request-form-submit uid="${c.recipient_fb_uid}" label="Invite %n to We Give" />
+                        </fb:request-form>
+                    </div>
+                </div>
+            </fb:else>
+            </fb:if-is-app-user>
+        
+        % else:
+        
+            ## show feed message form
+            <div class="gift_store_row">
+                <h3>Leave a Message for <fb:name uid="${c.recipient_fb_uid}" firstnameonly="true" linked="false" /></h3>
+
+                <p>
+                    <fb:name uid="${c.recipient_fb_uid}" firstnameonly="true" linked="false" /> may not realize that you sent <fb:pronoun uid="${c.recipient_fb_uid}" objective="true" />
+                    a gift.  Posting a message on
+                    <fb:pronoun uid="${c.recipient_fb_uid}" possessive="true" /> wall will make sure that
+                    <fb:pronoun uid="${c.recipient_fb_uid}" /> sees your gift!
+                    <br>
+                    You will also be helping to spread the word about We Give to
+                    <fb:name uid="${c.recipient_fb_uid}" firstnameonly="true" linked="false" /> and
+                    <fb:pronoun uid="${c.recipient_fb_uid}" possessive="true" /> friends!
+                </p>
+
+                <p>
+                    <form name="friendsWallPost" action="" method="POST" onsubmit="doFeedDialog(this); return false;">
+                        <div class="post_msg_box">
+                            <textarea id="user_message" name="user_message" rows="3" cols="65"
+                                    class="placeholder" onfocus="if(this.getValue()=='Your message here...'){this.setValue('');this.removeClassName('placeholder');}"
+                                    onblur="if(this.getValue()==''){this.setValue('Your message here...');this.addClassName('placeholder');}">Your message here...</textarea>
+                        </div>
+                        <div class="invite_button">
+                            <input type="submit" value="Post Message" class="inputbutton">
+                        </div>
+                    </form>
+                </p>
+
+
+                <script type="text/javascript">
+                    function doFeedDialog(form)
+                    {
+                        var gifthref = '${c.canvas_url}/gift?id=${c.donation.id}';
+                        var params = form.serialize();
+
+                        var template_bundle_id = 110890046851;
+                        var template_data = {
+                            'gift':'${c.donation.gift.name}',
+                            'gifthref':gifthref,
+                            'charity':'${c.donation.charity.name}',
+                            'charityhref':'${c.donation.charity.url}',
+                            'comments_xid':'wg-gift.${c.donation.id}',
+                            'images':[{
+                                'src':'${h.gift_image_url(c.donation.gift_id)}',
+                                'href':gifthref
+                                }]
+                        };
+
+                        var body_general = 'body test';
+                        var user_message_prompt = 'test prompt'
+                        var user_message = {
+                            'value': params.user_message
+                        };
+                        var target_ids = ${c.recipient_fb_uid};
+                        var continuation = function() {
+                            statusBox.setTextValue('doFeedDialog done');
+                        };
+                        Facebook.showFeedDialog(template_bundle_id, template_data,
+                            null, target_ids, continuation, null, user_message);
+                    }
+                </script>
+            </div>
+        
+        % endif
+        
+        </div>
+    
+    % endif
+    
+
+    <div id="debug_out_row">
+        Debug: <span id="debug_out"></span>
+    </div>
 %endif
 </div>
 
 <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
 
+
+##
+## defs
+##
+
+<%def name="success_box(recipient_fb_uid, donation, hidden=False)">
+    % if hidden:
+    <div class="gift_store_row hidden" id="success_box_row">
+    % else:
+    <div class="gift_store_row" id="success_box_row">
+    % endif
+        <div class="green_box">
+            <h2>Success!</h2>
+            Your $${'%.2f' % donation.amount} donation to ${donation.charity.name} succeeded.
+            Your gift has been delivered to <fb:name uid="${recipient_fb_uid}" firstnameonly="true" reflexive="true" />.
+            <br><br>
+            On behalf of <a href="${donation.charity.url}"
+            title="Go to ${donation.charity.name}'s website"
+            target="_blank">${donation.charity.name}</a>, thank you for your tax-deductible donation!
+        </div>
+    </div>
+</%def>
+
+<%def name="fail_box(recipient_fb_uid, donation, pay_status, hidden=False)">
+    <%
+        status_desc = {'Success':'succeeded', 'Pending':'is pending', 'Failure':'did not succeed', 'Cancelled':'was cancelled'}[pay_status]
+    %>
+    % if hidden:
+    <div class="gift_store_row hidden" id="fail_box_row">
+    % else:
+    <div class="gift_store_row" id="fail_box_row">
+    % endif
+        <div class="red_box">
+            <h2>Hmmm....</h2>
+            Your $${'%.2f' % donation.amount} donation to ${donation.charity.name} ${status_desc}.
+            <br><br>
+            You will need to retry your donation through Amazon Payments so that we can send your
+            meaningful gift to <fb:name uid="${recipient_fb_uid}" firstnameonly="true" reflexive="true" />.
+        </div>
+    </div>
+</%def>
+
+<%def name="feed_form(recipient_fb_uid, donation, canvas_url)">
+    <form fbtype="multiFeedStory" action="${canvas_url}/multifeed_handler">
+        <input type="hidden" name="did" value="${donation.id}">
+        <div class="invite_button">
+            <input type="submit" fbuid="${recipient_fb_uid}" label="Post a Message on %n's Wall">
+        </div>
+    </form>
+    <script type="text/javascript">
+        function feed_done()
+        {
+            statusBox.setTextValue('Thank you');
+        }
+    </script>
+</%def>
 

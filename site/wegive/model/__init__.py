@@ -41,6 +41,9 @@ class User(Base):
     __tablename__ = 'wg_user'
     __table_args__ = {'mysql_charset': 'utf8', 'mysql_engine':'InnoDB'}
     
+    #FLAG_ARTIST = 0x00000001
+    #FLAG_CHARITY_ADMIN = 0x00000002
+    
     id = Column(types.Integer, Sequence('user_id_seq', optional=True), primary_key=True)
     email = Column(types.Unicode(255), unique=True)
     password = Column(types.String(50))
@@ -48,6 +51,7 @@ class User(Base):
     last_name = Column(types.Unicode(64))
     address_id = Column(types.Integer, ForeignKey("wg_address.id"))
     created = Column(types.DateTime(), default=now)
+    #flags = Column(types.Integer(unsigned=True), nullable=False, default=0)
     
     received_gifts = orm.relation("Donation", primaryjoin="(Donation.recipient_id==User.id) & (Donation.delivered==True)",
                                   order_by="desc(Donation.given_date)", backref="recipient")
@@ -74,6 +78,10 @@ class UserPersona(Base):
     __tablename__ = 'wg_userpersona'
     __table_args__ = {'mysql_charset': 'utf8', 'mysql_engine':'InnoDB'}
     
+    #FLAG_HAS_FBML = 0x00000001
+    #FLAG_GRANTED_PUBLISH_STREAM = 0x00000002
+    #FLAG_GRANTED_EMAIL = 0x00000004
+    
     id = Column(types.Integer, Sequence('userpersona_id_seq', optional=True), primary_key=True)
     
     # the base mapping info (userID, networkID, network-userID)
@@ -83,6 +91,7 @@ class UserPersona(Base):
     # The user ID is a 64-bit int datatype. If you're storing it in a MySQL database, use the BIGINT unsigned datatype
     network_user_id = Column(MSBigInteger(unsigned=True), nullable=False)
     created = Column(types.DateTime(), default=now)
+    #flags = Column(types.Integer(unsigned=True), nullable=False, default=0)
     # TODO: uniqueness constraint on [network_id, network_user_id]
     # TODO: uniqueness constraint on [wg_user_id, network_id]
     
@@ -288,6 +297,7 @@ class Donation(Base):
     tracking_code = Column(types.String(64))  # i.e. for tracking referrals to We Give
     fb_post_id = Column(types.String(64))
     stream_short_msg = Column(types.UnicodeText)
+    #orig_network_id = Column(types.Integer, ForeignKey("wg_network.id"), nullable=False)  # network gift was given on
     
     # can be associated with multiple transactions if first transaction fails
     transactions = orm.relation("Transaction", order_by="Transaction.created", backref='donation')

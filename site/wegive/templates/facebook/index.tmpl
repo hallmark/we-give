@@ -37,6 +37,20 @@
         }
     }
     
+    function onSubmitClick(formName)
+    {
+        return (checkForm(formName) && showEmailPermTip());
+    }
+    
+    function showEmailPermTip()
+    {
+    % if not c.has_email_perm:
+        var tipEl = document.getElementById('email_perm_tip');
+        tipEl.setStyle('display', 'inline');
+    % endif
+        return true;
+    }
+    
     function checkForm(formName)
     {
         var form = document.getElementById(formName);
@@ -481,7 +495,14 @@ ul.toggle_charities
     font-style: italic;
     color: #888888;
     font-size: 87%;
+}
+div.tip
+{
     margin-top: 2px;
+}
+span.tip
+{
+    margin-left: 4px;
 }
 </style>
 <fb:user-agent includes="ie 6">
@@ -588,7 +609,14 @@ ul.toggle_charities
     </fb:if-is-app-user>
     </%doc>
 
-    <form id="gift_form" name="gift_form" action="send_gift" method="post" requirelogin=1>
+    <%
+        if c.has_email_perm:
+            prompt_attr = ''
+        else:
+            prompt_attr = 'promptpermission="email"'
+    %>
+        
+    <form id="gift_form" name="gift_form" action="send_gift" method="post" requirelogin="1" ${prompt_attr | n}>
 
         <input type="hidden" name="uuid" value="${c.uuid}" />
         <input type="hidden" name="gift_id" id="gift_id" value="" />
@@ -692,11 +720,11 @@ ul.toggle_charities
             <input type="hidden" name="charity_val" id="charity_val" value="${c.preselected_charity_id or ''}" />
             <ul id="gift_charity" class="toggle_charities">
         % for (offset, charity) in enumerate(c.charities):
-            %if offset == 0:
+            % if offset == 0:
                 <li class="first">
-            %else:
+            % else:
                 <li>
-            %endif
+            % endif
             <%
                 if c.preselected_charity_id == charity.id:
                     anchor_class = ' class="selected"'
@@ -716,11 +744,11 @@ ul.toggle_charities
                 </fb:js-string>
         % endfor
             </ul>
-        %if len(c.charities) <= 2:
+        % if len(c.charities) <= 2:
             <div class="more_charities_soon">
                 More partner charities will be added soon.
             </div>
-        %endif
+        % endif
         </div>
 
         <div class="page_row">
@@ -747,23 +775,26 @@ ul.toggle_charities
             <textarea id="gift_message" name="message" rows="4" cols="40" class="placeholder" onfocus="if(this.getValue()=='Your message here...'){this.setValue('');this.removeClassName('placeholder');}" onblur="if(this.getValue()==''){this.setValue('Your message here...');this.addClassName('placeholder');}">Your message here...</textarea>
         </div>
         
-    %if c.has_publish_stream:
+    % if c.has_publish_stream:
         <div class="page_row">
             <h3>Short message for your friend's wall (optional):</h3>
             <input id="stream_short_msg" type="text" name="stream_short_msg" class="inputtext" value="" size="45" autocomplete="off" />
             <div class="tip">Capitalized and ending with punctuation.  For example, "Have a great day, Pam!"</div>
         </div>
-    %endif
+    % endif
 
         <div class="page_row">
-            <input type="submit" value="Preview Your Gift" class="inputsubmit" onclick="return checkForm('gift_form');" />
+            <input type="submit" value="Preview Your Gift" class="inputsubmit" onclick="return onSubmitClick('gift_form');" />
+            % if not c.has_email_perm:
+                <span class="tip" id="email_perm_tip" style="display: none;">Please allow emails!</span>
+            % endif
         </div>
 
-        %if c.show_prompt_perm:
+        % if c.show_prompt_perm:
         <div class="page_row">
             <fb:prompt-permission perms="publish_stream">Would you like our application to post to your News Feed?</fb:prompt-permission>
         </div>
-        %endif
+        % endif
     </div>
     
     </form>
