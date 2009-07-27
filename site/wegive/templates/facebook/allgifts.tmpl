@@ -67,6 +67,7 @@
 {
     margin: 0 0 0 15px;
     float: left;
+    text-align: center;
 }
 .gift_message
 {
@@ -82,6 +83,14 @@
     font-style: italic;
     margin-top: 3px;
     color: #888888;
+}
+.page_stats
+{
+    float: left;
+    width: 200px;
+    padding-left: 67px;
+    text-align: left;
+    margin-top: 6px;
 }
 </style>
 
@@ -125,6 +134,15 @@
         </div>
         <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
     </div>
+    
+    ## spacer
+    <div style="height: 17px; font-size: 1px;">&nbsp;</div>
+
+    % if c.received_gifts and len(c.received_gifts) > 0:
+        <div class="page_stats">
+            Displaying 1-${h.plural(len(c.received_gifts), 'gift', 'gifts')}.
+        </div>
+    % endif
 
     % if not c.received_gifts:
         <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
@@ -141,7 +159,9 @@
                 <div class="gift_content">
                     From: <span class="user_name"><fb:name uid="${donation.fb_uid}" capitalize="true" /></span>
                     <div class="gift_and_message">
-                        <div class="gift_image"><img src="${h.gift_image_url(donation.gift_id)}" alt="${donation.gift.name}"></div>
+                        <div class="gift_image"><img src="${h.gift_image_url(donation.gift_id)}" alt="${donation.gift.name}"><br>
+                            <a href="gift?id=${donation.id}&amp;wgref=${'allgifts?uid=%s' % c.recipient_id | u}">view gift</a>
+                        </div>
                         <div class="gift_message">
                             ${h.literal(h.nl2br(donation.message))}
                         </div>
