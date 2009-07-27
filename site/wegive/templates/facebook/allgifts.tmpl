@@ -159,7 +159,7 @@
                 <div class="gift_content">
                     From: <span class="user_name"><fb:name uid="${donation.fb_uid}" capitalize="true" /></span>
                     <div class="gift_and_message">
-                        <div class="gift_image"><img src="${h.gift_image_url(donation.gift_id)}" alt="${donation.gift.name}"><br>
+                        <div class="gift_image"><a href="gift?id=${donation.id}&amp;wgref=${'allgifts?uid=%s' % c.recipient_id | u}"><img src="${h.gift_image_url(donation.gift_id)}" alt="${donation.gift.name}"></a><br>
                             <a href="gift?id=${donation.id}&amp;wgref=${'allgifts?uid=%s' % c.recipient_id | u}">view gift</a>
                         </div>
                         <div class="gift_message">
