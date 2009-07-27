@@ -18,8 +18,8 @@
 #gift_case
 {
     background-color: #F7F7F7;
-    width: 630px;
-    padding: 10px 65px;
+    width: 660px;
+    padding: 10px 35px 10px 65px;
 }
 #gift_box
 {
@@ -53,6 +53,7 @@
 {
     margin: 0 0 0 15px;
     float: left;
+    text-align: center;
 }
 .gift_message
 {
@@ -68,6 +69,13 @@
     font-style: italic;
     margin-top: 3px;
     color: #888888;
+}
+.page_stats
+{
+    float: right;
+    width: 200px;
+    text-align: right;
+    padding-top: 18px;
 }
 </style>
 
@@ -87,6 +95,11 @@
 </fb:tabs>
 
 <div id="gift_case">
+% if c.sent_gifts and len(c.sent_gifts) > 0:
+    <div class="page_stats">
+        Displaying 1-${h.plural(len(c.sent_gifts), 'gift', 'gifts')}.
+    </div>
+% endif
     <h3>Gifts you have sent to others:</h3>
     Note: only you can see this page.<br/>
 
@@ -104,13 +117,15 @@
             <div class="gift_content">
                 To: <span class="user_name"><fb:name uid="${donation.fb_uid}" capitalize="true" /></span>
                 <div class="gift_and_message">
-                    <div class="gift_image"><img src="${h.gift_image_url(donation.gift_id)}" alt="${donation.gift.name}"></div>
+                    <div class="gift_image"><a href="gift?id=${donation.id}&amp;wgref=sent"><img src="${h.gift_image_url(donation.gift_id)}" alt="${donation.gift.name}"></a><br>
+                        <a href="gift?id=${donation.id}&amp;wgref=sent">view gift</a>
+                    </div>
                     <div class="gift_message">
                         ${h.literal(h.nl2br(donation.message))}
                     </div>
                     <div style="height: 1px; font-size: 1px; clear: both;">&nbsp;</div>
                     <div class="benefitting">
-                        benefitting <a href="${donation.charity.url}" title="Go to website of ${donation.charity.name}" target="_blank">${donation.charity.name}</a>
+                        $${"%.2f"%donation.amount} donation benefitting <a href="${donation.charity.url}" title="Go to website of ${donation.charity.name}" target="_blank">${donation.charity.name}</a>
                     </div>
                 </div>
             </div>
