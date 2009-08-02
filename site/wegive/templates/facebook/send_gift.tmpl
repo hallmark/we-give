@@ -11,6 +11,14 @@ a.anchor_button
     text-decoration: none;
     padding: 3px 18px 4px;
 }
+a.donate_button,
+.donate_button
+{
+    background-color: #FAC12B; /*#E6B228;*/
+    color: #001271;
+    font-weight: bold;
+    padding: 4px 18px 5px;
+}
 .page_row
 {
     margin: 20px 0;
@@ -70,6 +78,21 @@ a.anchor_button
     padding: 15px 10px;
     margin-left: 100px;
     border: 1px solid #e7e7e7;
+}
+
+.tip
+{
+    font-style: italic;
+    color: #888888;
+    font-size: 87%;
+}
+div.tip
+{
+    margin-top: 2px;
+}
+span.tip
+{
+    margin-left: 4px;
 }
 
 
@@ -157,7 +180,7 @@ a.anchor_button
     %if c.multiuse_token:
         or:
         <div class="gift_store_row">
-            <a href="wrap_it_up?usemt=t&amp;callerReference=${c.caller_ref}&amp;mtid=${c.multiuse_token.id}" class="inputbutton anchor_button">Pay with pre-authorized donations</a>
+            <a href="wrap_it_up?usemt=t&amp;callerReference=${c.caller_ref}&amp;mtid=${c.multiuse_token.id}" class="inputbutton anchor_button donate_button">Use pre-authorization</a> <span class="tip">Est. $${"%.2f"%c.multiuse_token.est_amount_remaining} out of ${"%.2f"%c.multiuse_token.total_amount} remaining</span>
         </div>
     %endif
 %endif
