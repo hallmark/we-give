@@ -216,7 +216,7 @@ class FacebookcanvasController(BaseController):
         else:
             charity_q = meta.Session.query(Charity)
             if FPS_PROMO_ACTIVE:
-                charities = charity_q.filter(Charity.promo_recipient_token_id != None).order_by(Charity.created).all()
+                charities = charity_q.filter(Charity.promo_recipient_token_id != None).order_by(Charity.name).all()
             else:
                 charities = charity_q.filter(Charity.recipient_token_id != None).order_by(Charity.created).all()
             if g.mc.set(charities_mkey, charities, time=86400):
