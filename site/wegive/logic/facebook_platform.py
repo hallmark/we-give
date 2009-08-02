@@ -102,12 +102,13 @@ def publish_feed_item(donor_id, recipient_id, donation_id, gift_name, charity_na
                                                   CANVAS_URL, gift_name.lower(),
                                                   charity_name, donation_id)
     try:
+        log.debug('About to call feed.publishUserAction for donation %d.' % donation_id)
         publish_user_action_res = fb.api_client.feed.publishUserAction(template_bundle_id=TEMPLATE_BUNDLE_ID,
                                                                        template_data=data,
                                                                        target_ids=[recipient_id])
         log.debug('publishUserAction response: %r' % publish_user_action_res)
     except FacebookError, err:
-        log.debug('Unexpected error calling facebook.publishUserAction: ' + str(err))
+        log.debug('Unexpected error calling feed.publishUserAction: ' + str(err))
 
 def publish_stream_item(donor_id, recipient_id, donation):
     charity_name = donation.charity.name
